@@ -12,3 +12,9 @@
 - Treat new datatype rules and side conditions as changes to the trusted base.
 - Add meaningful negative and independent-reference checks for semantic changes.
 - Preserve dirty checkouts and existing evidence; pin external references.
+- Follow PLAN.md and the stage/obligation registry in plan/roadmap.shen.
+  Read docs/CONSTRUCTION.md before implementing admission or new proof rules.
+- The admitted Shen definition is the executable specification. Avoid a second
+  hand-written implementation; prove correspondence for necessary translations.
+- Keep generic proofs, concrete witnesses, finite proofs, tests, and assumptions
+  distinct. No test result or caller-supplied Boolean discharges a generic theorem.

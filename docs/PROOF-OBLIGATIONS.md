@@ -30,3 +30,28 @@ change that status.
 
 For richer domains, add partiality, errors, effects, machine arithmetic,
 termination, and fairness obligations before accepting claims over them.
+
+## Construction roadmap correspondence
+
+The detailed program is in PLAN.md; required evidence kinds are registered in
+plan/roadmap.shen. This table assigns work, not discharge status. All obligations
+above remain open until exact bound derivations are checked.
+
+| Existing obligation | Construction work |
+| --- | --- |
+| 1 validation | R01 identity, R03 admitted syntax, R16 validator construction |
+| 2 evaluation | R03 operational adequacy, R04 data/arithmetic, R16 evaluator construction |
+| 3 transitions | R07 machine construction, R08 effects, R16 semantic correspondence |
+| 4 finite certificates | R07 reachable safety, R10 finite checking, R16 kernel soundness |
+| 5 search | R10 rechecked results and minimization |
+| 6 observations | R08 uncertainty, R10 belief adequacy, R13 adapter mapping |
+| 7 propositional logic | R02 root rules, R04 induction, R16 checker soundness |
+| 8 System S correspondence | R05 admission and R16 public judgment correspondence |
+| 9 host preservation | R15 deployment, with explicit residual host assumptions |
+| 10 adapters | R11 proof reconstruction, R13 traces, R14 implementation refinement |
+
+New generic obligations include construction-rule soundness, total function
+contracts, contract composition, invariant preservation, effect/resource
+closure, assumption retention, and exact source/dependency identity. Tests of
+the roadmap schema establish none of these. R17 requires the matching proof
+closure and permits no conversion of test evidence into generic proof.

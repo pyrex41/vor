@@ -28,3 +28,13 @@ The upstream suite was invoked from its own clean checkout with:
 macOS bootstrap is configured with the published archive checksum but has not
 been executed in this validation. No cross-port or compiler correctness claim
 is made. CI repeats Vör conformance on the primary Linux/Chez host.
+
+## Construction-plan addition
+
+After adding the executable roadmap and detailed construction design,
+`make test` passes **167 checks**: the original 151 plus 16 planning-contract
+checks. The roadmap contains 18 stages and 54 required evidence goals, all
+reported open. Its negative cases reject dependency cycles, missing/forward
+dependencies, duplicate stages/goals, improper data, unknown evidence kinds,
+and self-reported completion fields. These are planning checks, not new proofs
+of Vör's mathematical correctness. No acceptance-kernel semantics changed.

@@ -102,3 +102,16 @@ implemented yet. Existing evidence is not relabelled as Vör proof.
 
 See [semantics](docs/SEMANTICS.md), [architecture](docs/ARCHITECTURE.md),
 [proof obligations](docs/PROOF-OBLIGATIONS.md), and [execution plan](PLAN.md).
+
+## Construction roadmap
+
+The target is proof-producing Shen definitions: the executable specification
+constructs its result and correctness evidence under a checked generic contract.
+The [detailed plan](PLAN.md) defines 18 dependency-ordered waves, exact artifacts,
+theorem obligations, hostile cases, and exit gates. The
+[construction design](docs/CONSTRUCTION.md) explains the admission theorem,
+indexed transfer example, effects, and the trusted root.
+
+`make plan` executes the Shen roadmap registry and lists its open obligations.
+Registry validity is a planning check, not proof that a wave is complete. The
+current foundation does not yet prove generic program correctness by construction.

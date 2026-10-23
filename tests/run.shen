@@ -169,4 +169,5 @@
   [rejected duplicate-observation-field])
 
 (load "tests/exhaustive.shen")
+(load "tests/roadmap.shen")
 (output "VOR: ~A checks passed.~%" (value *vor-test-count*))
