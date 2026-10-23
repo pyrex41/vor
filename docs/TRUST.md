@@ -1,0 +1,34 @@
+# Trust boundary
+
+The authoritative transition meaning is `shen/core.shen`. The invariant
+acceptance kernel is `shen/certificate.shen`. The explorer is an evidence
+producer and is deliberately outside the finite-certificate acceptance path.
+Observation and trace checking use the same successor semantics.
+
+Current trusted components are the reviewed Vör source, Shen compiler and
+System S where used, the Shen-Scheme backend, Chez runtime, and the host that
+executes them. Propositional acceptance additionally trusts `shen/proof.shen`
+and its literal decoder. There is no independently verified machine-code path.
+
+Tests and cross-checks are evidence, not a mechanized soundness theorem. No
+Lean/Rocq proof is currently included. Vör does not claim a smaller trusted base
+merely because some source files are short.
+
+Models and proof objects passed to public APIs are inert finite data. Loading
+an arbitrary `.shen` file is execution of trusted code and can redefine the
+kernel, proof rules, or host bindings. It is not an untrusted artifact loader
+or sandbox. An acceptance result is valid only for an unchanged trusted image.
+
+Hash-checked bootstrap downloads establish the selected artifact identity,
+not that an artifact is correct. The PR #117 source is loaded on every run;
+the two helper arities are also checked. This is provenance and a regression
+gate, not a proof of the typechecker optimization.
+
+Unsupported domains are rejected rather than approximated. VOR/0 has Boolean
+states and atomic abstract actions; it does not model OS threads, I/O errors,
+partial functions, crashes, resource budgets of the SUT, or dynamic loading.
+Those need explicit outcomes and semantics before they can enter a claim.
+
+Pending refinement proofs, checking an implementation's recorded traces does
+not imply all implementation executions are permitted. A specification may
+also faithfully express the wrong requirements.
