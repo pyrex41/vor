@@ -14,11 +14,10 @@ interpreting an acceptance result.
 
 ## Run
 
-The primary host is **Tizoc's Shen-Scheme on Chez**. Bootstrap pins upstream
-v0.52 by archive SHA-256 and loads the exact typechecker from
-[Shen kernel PR #117](https://github.com/Shen-Language/shen-sources/pull/117),
-also by SHA-256. No JavaScript runtime is used. PR #117 belongs to the kernel
-repository, not to shen-scheme.
+The primary host is the shared **pyrex41 Shen-Scheme on Chez** runtime used by
+ShenCheck. Bootstrap pins release `v0.52-pyrex41.5` by archive SHA-256. The
+release is based on Shen-Scheme `8d261518` and the Shen 43.1 kernel at
+`ec16a9f`; the lock records both identities. No JavaScript runtime is used.
 
 ```sh
 make bootstrap
@@ -26,10 +25,11 @@ make test
 make demo
 ```
 
-Pinned binaries are provided for Linux x86_64 and macOS arm64. Linux is the
-initial tested platform. `toolchain.lock.json` records provenance. Downloads and
-host files remain in `.tools/`. `scripts/shen` installs and checks the PR #117
-helpers on every invocation; it does not assume the release already has them.
+The published release includes a macOS arm64 binary; Linux is built from the
+same checksum-pinned source when a binary is unavailable. `toolchain.lock.json`
+records provenance. Downloads and host files remain in `.tools/`. `scripts/shen`
+checks the selected runtime identity on every invocation and never silently
+falls back to another Shen implementation.
 
 ## A model and its evidence
 

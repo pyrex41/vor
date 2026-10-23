@@ -19,10 +19,11 @@ an arbitrary `.shen` file is execution of trusted code and can redefine the
 kernel, proof rules, or host bindings. It is not an untrusted artifact loader
 or sandbox. An acceptance result is valid only for an unchanged trusted image.
 
-Hash-checked bootstrap downloads establish the selected artifact identity,
-not that an artifact is correct. The PR #117 source is loaded on every run;
-the two helper arities are also checked. This is provenance and a regression
-gate, not a proof of the typechecker optimization.
+Hash-checked bootstrap downloads establish the selected shared Shen-Scheme
+artifact identity, not that an artifact is correct. The pinned 43.1 kernel
+commit is recorded in the lock and checked as release provenance. This is a
+runtime reproducibility and regression gate, not a proof of the compiler,
+Chez, or typechecker implementation.
 
 Unsupported domains are rejected rather than approximated. VOR/0 has Boolean
 states and atomic abstract actions; it does not model OS threads, I/O errors,
