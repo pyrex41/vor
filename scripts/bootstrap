@@ -22,11 +22,16 @@ case "$(uname -s):$(uname -m)" in
     directory=.tools/source/shen-scheme-v0.52-pyrex41.5-src
     if [ ! -x "$directory/_build/bin/shen-scheme" ]; then
       mkdir -p .tools/source
-      rm -rf "$directory.partial"
-      mkdir "$directory.partial"
-      tar xzf "$source_archive" --no-same-owner --strip-components=1 -C "$directory.partial"
-      mv "$directory.partial" "$directory"
-      make -C "$directory" -j2
+      if [ ! -d "$directory" ]; then
+        rm -rf "$directory.partial"
+        mkdir "$directory.partial"
+        tar xzf "$source_archive" --no-same-owner --strip-components=1 -C "$directory.partial"
+        mv "$directory.partial" "$directory"
+      fi
+      command -v timeout >/dev/null 2>&1 || {
+        echo 'Linux source bootstrap requires coreutils timeout.' >&2; exit 2;
+      }
+      timeout --kill-after=15s 10m make -C "$directory" -j2
     fi
     kernel=.tools/t-star-pr117.shen
     if [ ! -f "$kernel" ]; then
