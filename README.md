@@ -14,8 +14,10 @@ interpreting an acceptance result.
 
 ## Run
 
-The primary host is **Tizoc's Shen-Scheme on Chez**. Bootstrap pins upstream
-v0.52 by archive SHA-256 and loads the exact typechecker from
+The required kernel is **ShenOSKernel 43.1 from
+[Shen-Language/shen-sources](https://github.com/Shen-Language/shen-sources),
+with PR #117**. Its host is **Tizoc's Shen-Scheme on Chez**. Bootstrap pins
+the host release v0.52 by archive SHA-256 and loads the exact typechecker from
 [Shen kernel PR #117](https://github.com/Shen-Language/shen-sources/pull/117),
 also by SHA-256. No JavaScript runtime is used. PR #117 belongs to the kernel
 repository, not to shen-scheme.
@@ -29,7 +31,9 @@ make demo
 Pinned binaries are provided for Linux x86_64 and macOS arm64. Linux is the
 initial tested platform. `toolchain.lock.json` records provenance. Downloads and
 host files remain in `.tools/`. `scripts/shen` installs and checks the PR #117
-helpers on every invocation; it does not assume the release already has them.
+helpers on every invocation and refuses a kernel other than 43.1; it does not
+assume the host release already includes the PR. The host release number
+(v0.52) is distinct from the Shen kernel version (43.1).
 
 ## A model and its evidence
 

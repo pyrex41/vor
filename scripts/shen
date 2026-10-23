@@ -10,6 +10,8 @@ else actual=$(shasum -a 256 "$kernel" | cut -d ' ' -f 1); fi
   echo 'PR 117 typechecker checksum mismatch' >&2; exit 1;
 }
 # Always install the pinned definitions, including when the release predates 117.
-exec "$host" eval -l "$kernel" \
+exec "$host" eval \
+  -e '(if (= (value *version*) "43.1") shen43.1-ready (simple-error "Vör requires ShenOSKernel 43.1"))' \
+  -l "$kernel" \
   -e '(if (and (= (arity shen.search-user-datatypes-h) 7) (= (arity shen.by-hypothesis-h) 7)) pr117-ready (simple-error "PR 117 helpers unavailable"))' \
   "$@"
