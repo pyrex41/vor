@@ -31,7 +31,12 @@ case "$(uname -s):$(uname -m)" in
       command -v timeout >/dev/null 2>&1 || {
         echo 'Linux source bootstrap requires coreutils timeout.' >&2; exit 2;
       }
-      timeout --kill-after=15s 10m make -C "$directory"
+      if ldconfig -p 2>/dev/null | grep -q 'libuuid\.so'; then
+        timeout --kill-after=15s 10m make -C "$directory"
+      else
+        echo 'libuuid development library unavailable; building without optional UUID linkage.' >&2
+        timeout --kill-after=15s 10m make -C "$directory" linkerflags='-lm -ldl -lpthread'
+      fi
     fi
     kernel=.tools/t-star-pr117.shen
     if [ ! -f "$kernel" ]; then
