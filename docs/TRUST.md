@@ -20,8 +20,9 @@ kernel, proof rules, or host bindings. It is not an untrusted artifact loader
 or sandbox. An acceptance result is valid only for an unchanged trusted image.
 
 Hash-checked bootstrap downloads establish the selected shared Shen-Scheme
-artifact identity, not that an artifact is correct. The pinned 43.1 kernel
-commit is recorded in the lock and checked as release provenance. This is a
+artifact identity, not that an artifact is correct. The exact PR #117 typechecker
+overlay is checksum-checked and loaded on every invocation; helper arities are
+also checked. The release binary is not assumed to embed those helpers. This is a
 runtime reproducibility and regression gate, not a proof of the compiler,
 Chez, or typechecker implementation.
 

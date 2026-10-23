@@ -16,8 +16,10 @@ interpreting an acceptance result.
 
 The primary host is the shared **pyrex41 Shen-Scheme on Chez** runtime used by
 ShenCheck. Bootstrap pins release `v0.52-pyrex41.5` by archive SHA-256. The
-release is based on Shen-Scheme `8d261518` and the Shen 43.1 kernel at
-`ec16a9f`; the lock records both identities. No JavaScript runtime is used.
+release source is based on upstream Shen-Scheme `8d261518`. The published
+macOS binary lacks PR #117 helpers, so the launcher always loads the complete
+checksum-pinned typechecker from kernel commit `ec16a9f` and checks its helper
+arities. The lock records both identities. No JavaScript runtime is used.
 
 ```sh
 make bootstrap

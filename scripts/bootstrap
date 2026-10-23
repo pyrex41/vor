@@ -3,6 +3,7 @@
 set -eu
 cd "$(dirname "$0")/.."
 mkdir -p .tools/downloads .tools/host
+host_path=".tools/host-path-$(uname -s)-$(uname -m)"
 hash() {
   if command -v sha256sum >/dev/null 2>&1; then sha256sum "$1" | cut -d ' ' -f 1
   else shasum -a 256 "$1" | cut -d ' ' -f 1; fi
@@ -48,7 +49,7 @@ case "$(uname -s):$(uname -m)" in
     [ "$(hash "$kernel")" = 480e26c610b593b66f87118ea2fbeacaf34201e42f2279a09decfb9481879168 ] || {
       echo 'PR 117 typechecker checksum mismatch' >&2; exit 1;
     }
-    printf '%s\n' "$directory/_build/bin/shen-scheme" > .tools/host-path
+    printf '%s\n' "$directory/_build/bin/shen-scheme" > "$host_path"
     echo 'Pinned Shen-Scheme source built.'
     exit 0 ;;
   Darwin:arm64)
@@ -76,5 +77,5 @@ fi
 [ "$(hash "$kernel")" = 480e26c610b593b66f87118ea2fbeacaf34201e42f2279a09decfb9481879168 ] || {
   echo 'PR 117 typechecker checksum mismatch' >&2; exit 1;
 }
-printf '%s\n' ".tools/host/$directory/bin/shen-scheme" > .tools/host-path
+printf '%s\n' ".tools/host/$directory/bin/shen-scheme" > "$host_path"
 echo 'Pinned Shen-Scheme binary ready.'
