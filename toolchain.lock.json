@@ -11,5 +11,7 @@
   "required_kernel_pr": "https://github.com/Shen-Language/shen-sources/pull/117",
   "required_kernel_commit": "ec16a9fa4fc2e87e2aa336fb1ae30e8ac2266394",
   "kernel_source_commit": "ec16a9fa4fc2e87e2aa336fb1ae30e8ac2266394",
-  "kernel_policy": "The selected Shen-Scheme release already contains the pinned 43.1 kernel; verify the release/source identity before loading Vör."
+  "kernel_policy": "Load the complete pinned typechecker before any Vör module; the release and overlay identities are both verified.",
+  "overlay_path": "sources/t-star.shen",
+  "overlay_sha256": "480e26c610b593b66f87118ea2fbeacaf34201e42f2279a09decfb9481879168"
 }

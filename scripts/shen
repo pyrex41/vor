@@ -3,6 +3,12 @@ set -eu
 cd "$(dirname "$0")/.."
 [ -f .tools/host-path ] || { echo 'Run make bootstrap first.' >&2; exit 2; }
 host=$(cat .tools/host-path)
-exec "$host" eval \
-  -e '(if (= (value *implementation*) "chez-scheme") shen-scheme-ready (simple-error "shared Shen-Scheme runtime unavailable"))' \
+kernel=.tools/t-star-pr117.shen
+[ -f "$kernel" ] || { echo 'Run make bootstrap first.' >&2; exit 2; }
+exec "$host" eval -l "$kernel" \
+  -e '(if (and (= (value *implementation*) "chez-scheme")
+              (= (arity shen.search-user-datatypes-h) 7)
+              (= (arity shen.by-hypothesis-h) 7))
+       shen-scheme-ready
+       (simple-error "shared Shen-Scheme runtime or pinned 43.1 helpers unavailable"))' \
   "$@"
