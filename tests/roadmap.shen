@@ -2,7 +2,7 @@
 
 (test.equal roadmap-valid (vor.plan-valid? (vor.roadmap)) true)
 (test.equal roadmap-stage-count (length (vor.plan-stage-ids (vor.roadmap))) 18)
-(test.equal roadmap-open-count (length (vor.plan-open-goals (vor.roadmap))) 54)
+(test.equal roadmap-open-count (length (vor.plan-open-goals (vor.roadmap))) 57)
 (test.equal roadmap-not-proof (hd (vor.plan-report (vor.roadmap))) plan)
 (test.equal roadmap-empty (vor.plan-valid? []) false)
 (test.equal roadmap-cycle

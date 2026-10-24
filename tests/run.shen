@@ -170,4 +170,7 @@
 
 (load "tests/exhaustive.shen")
 (load "tests/roadmap.shen")
+(load "tests/claim-binding.shen")
+(load "tests/artifact.shen")
+(load "tests/assumption-boundaries.shen")
 (output "VOR: ~A checks passed.~%" (value *vor-test-count*))

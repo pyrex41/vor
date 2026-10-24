@@ -11,5 +11,8 @@
   "required_kernel_commit": "ec16a9fa4fc2e87e2aa336fb1ae30e8ac2266394",
   "overlay_path": "sources/t-star.shen",
   "overlay_sha256": "480e26c610b593b66f87118ea2fbeacaf34201e42f2279a09decfb9481879168",
-  "overlay_policy": "Load the complete pinned typechecker before any Vor module. Never infer PR inclusion from a version string."
+  "overlay_policy": "Load the complete pinned typechecker before any Vor module. Never infer PR inclusion from a version string.",
+  "kernel_repository": "https://github.com/Shen-Language/shen-sources",
+  "kernel_version": "43.1",
+  "kernel_base_tag": "shen-43.1"
 }
