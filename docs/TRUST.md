@@ -63,3 +63,17 @@ or a proof of complete native dependency closure. Selected host value operations
 remain trusted. Native eval-kl is used only by controlled test fixtures, never
 by admission, reference evaluation, or artifact acceptance. PROGRAM-METATHEORY.md
 states the still-open generic preservation, determinism, and adequacy claims.
+
+
+R04/R05 extend the trusted root with spec/data.shen, the version-1 signature
+formation clauses, the data-induct/inject/disjoint rule expansions in
+proofs/induction.shen, spec/contracts.shen, and kernel/admit.shen. The finite
+initial-algebra interpretation and the structural-construction/equation link
+to R03 execution are explicit premises pending the metatheory in ADMISSION.md.
+The integer ground decision additionally trusts constructor arithmetic in
+proofs/arithmetic.shen. Its generic proof builders and construct/ producers
+have no privileged acceptance path. The 20-rule R02 inventory alone no longer
+describes the full loaded root; vor.algebra-root-inventory adds the three algebra
+rules, and kernel/admit.shen defines the separate construction/admission rules.
+Generic application proofs are available relative to that root; the root's own
+generic soundness/termination, R03 adequacy and host preservation remain open.

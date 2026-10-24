@@ -9,7 +9,8 @@ by the exact model, state, transition endpoints, or logical proposition.
 
 **Status: implemented foundation, not a verified Shen compiler or a proof of
 arbitrary application correctness.** Supported domains are finite Boolean state
-machines and explicit constructive first-order derivations. See [the trust boundary](docs/TRUST.md) before
+machines, explicit constructive first-order derivations, and a restricted
+structurally recursive total Shen fragment. See [the trust boundary](docs/TRUST.md) before
 interpreting an acceptance result.
 
 ## Run
@@ -30,6 +31,7 @@ make demo
 make boundary-demo
 make logic-demo
 make program-demo
+make admission-demo
 ```
 
 The published release includes a macOS arm64 binary; Linux is built from the
@@ -115,6 +117,19 @@ its witness. See [the admitted syntax and semantics](docs/PROGRAM.md) and
 This is concrete execution evidence, not generic all-input correctness or
 termination admission. Effects and higher-order forms remain unsupported.
 
+## Algebraic data and generic contracts
+
+R04/R05 add monomorphic positive initial algebras, induction, constructor
+injection/disjointness, Peano arithmetic, canonical signed integers, and checked
+construction/admission of a structurally recursive total subset. Generic proofs
+for addition, recursive identity, composition and append bind the exact Shen
+source that runs. `make admission-demo` checks these contracts and executes it.
+
+See [data and arithmetic](docs/DATA.md) and [admission](docs/ADMISSION.md) for
+rules, APIs, examples and limitations. These quantified application derivations
+are checked relative to the reviewed construction root. Generic implementation
+soundness, the main admission metatheorem and compiler preservation remain open.
+
 ## First-order proof kernel
 
 R02 adds a fixed 20-rule constructive first-order kernel with sorted signatures,
@@ -126,7 +141,7 @@ trees; `vor.fol-typecheck` checks the exact indexed System S judgment.
 proof nodes. See [the logic contract](docs/LOGIC.md) and
 [metatheory/root obligations](docs/LOGIC-METATHEORY.md). The accepted derivations
 are relative to this trusted implementation and root theory; generic checker
-soundness, program admission, and host preservation remain open.
+soundness, the admission metatheorem, and host preservation remain open.
 
 ## Exact claims and inert artifacts
 

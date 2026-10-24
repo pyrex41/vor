@@ -9,7 +9,7 @@ Implementation progress and mathematical discharge are separate.
 | 2 | R01 | Exact root/subject/dependency/assumption/judgment binding with hostile substitutions | Implemented for existing Boolean/propositional domains; generic obligations open |
 | 3 | R01 / issue #3 | Inert bounded artifact decoding with independent byte vectors and truncation corpus | VOR-DATA/0 byte-list codec implemented; no stream service or Rust peer |
 | 4 | R02 | Fixed first-order logic, scoped equality/substitution, root inventory and rule corpus | Implemented 20-rule kernel, reserved tree induction, typed claims, hostile corpus and independent finite/Kripke checks; metatheory open |
-| 5 | R03–R05 | Admitted Shen subset, evaluator adequacy, induction, exact arithmetic, generic construction contracts | Open; do not replace with checked examples |
+| 5 | R03–R05 | Closed execution, algebraic induction, exact arithmetic and generic construction contracts | Implemented restricted total fragment and source-bound quantified proofs; generic root/normalizer/adequacy/admission metatheory remains open |
 | 6 | R06–R10 / #2 | Generic transfer, preservation and effects; dedup transformer with explicit no-crash boundary | Open; recovery and external effects need separate theorems |
 | 7 | R13 / #3–#4 | Versioned independent checker process, concurrent observation map, real service faults/reduction | Open; local byte decoding is not this integration |
 | 8 | R14–R17 | Concrete simulation, deployment preservation, acceptance-kernel proofs, fresh-image release | Open |
@@ -46,3 +46,14 @@ binding, and a process-service regression. Its finite native agreement and
 witness checks do not complete the generic preservation/adequacy theorems.
 Next are R04's admitted inductive data/exact arithmetic principles and the
 R05 contracts/termination machinery needed to prove constructors for all inputs.
+
+
+R04/R05 now provide declared monomorphic positive algebras, induction/injection/
+disjointness, Peano and canonical signed-integer operations, typed structural
+construction, exact source equations, quantified contract checking, indexed and
+wire claims, and admitted reference execution. Generic addition associativity,
+copy identity, composed behavior and append length/right-identity proofs check
+without input sampling or caller-supplied axioms. See DATA.md and ADMISSION.md.
+The process service now also checks generic admission artifacts. This advances
+implementation and application proofs; it does not close the 57 root/metatheory
+obligations or authorize a generic transfer claim before R06's own derivations.

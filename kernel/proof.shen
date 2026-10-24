@@ -90,6 +90,12 @@
       [rejected invalid-equality-substitution])
   _ V G [forall vor.tree P] [tree-induct Base Step] ->
     (vor.fol-tree-goals V G P Base Step)
+  Sig V G [forall Sort P] [data-induct Branches] ->
+    (vor.algebra-induction Sig V G Sort P Branches)
+  Sig V G [equal Sort L R] [inject C Index E] ->
+    (vor.algebra-inject Sig V G Sort L R C Index E)
+  Sig V G [bottom] [disjoint L R E] ->
+    (vor.algebra-disjoint Sig V G L R E)
   _ _ _ _ _ -> [rejected invalid-first-order-proof])
 
 (define vor.fol-instance?

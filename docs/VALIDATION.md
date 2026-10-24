@@ -203,3 +203,42 @@ normalization preservation, formation/step preservation, determinism, evaluator
 adequacy, totality, and native/compiler correspondence obligations remain open
 as specified in PROGRAM-METATHEORY.md. Frozen application names do not establish
 complete trusted runtime dependency closure or concurrent root-rebinding safety.
+
+## R04/R05 algebraic data and total construction
+
+Validated 2026-10-24 on the unchanged pinned shared Chez/ShenOSKernel 43.1 +
+PR #117 toolchain used for R03. No compiler/runtime source changed.
+
+- `make test`: **75,598 checks passed** (R03 baseline 75,081).
+- `make test-kernel`: **134 passed, 0 failed**, with the existing counter-retaining
+  pinned upstream harness and closed stdin.
+- `make test-service`: **15 tests passed**. The additional process fixture is
+  independently assembled in Python: a complete positive algebraic identity
+  admission proof, forged proof, missing construction branch and proof exhaustion.
+  Python constructs bytes and checks response framing; Shen decides validity.
+- `make admission-demo`: generic contracts accepted; the same admitted source
+  executes `twice(succ(succ(zero)))` to four successors and its R03 witness checks.
+- `make test-construction-mutations`: **five mutants killed** in isolated copies:
+  disabled structural decrease, bypassed generic post checking, weakened pattern
+  linearity, omitted injection endpoint binding, and leaked an induction conclusion
+  as its own hypothesis. Working source and prior evidence remain untouched.
+- Python syntax compilation and `git diff --check` pass.
+
+The new corpus includes constructor formation/encoding, negative occurrence and
+uninhabited/mutual cycles, injection/disjointness, induction coverage/freshness/
+budgets, generic product/sum/Boolean elimination, exact integer domains, signed
+addition against a separate host-number oracle on **169 operand pairs** (-6..6),
+and **81** independent numeric comparisons of the admitted Peano addition source
+(0..8). Construction rejection cases separately exercise decreasing recursion,
+linear patterns, dependency order, complete coverage, guards, wrong constructors,
+right-shape/wrong-value returns, omitted list elements, stale source/contracts,
+foreign mathematical symbols and context smuggling. Generic claims and additional
+constructed theorems check through exact R01 envelopes and inert wire decoding.
+
+Quantified application derivations check for addition's right zero and associativity,
+recursive identity, a source-bound composed result, append length and right nil.
+These proofs use induction and exact reconstructed defining equations, not input
+sampling. Native-number comparisons, mutation results and process tests remain
+test evidence. DATA.md and ADMISSION.md state the additional trusted rules and
+open generic checker, encoding, arithmetic, construction/admission, R03 adequacy
+and host-preservation metatheory. The 57 roadmap goals are not marked discharged.

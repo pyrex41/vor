@@ -50,3 +50,12 @@ requests do not choose executable source to load. A checked evaluation of a
 modeled error is a successful evidence check, not proof that an application
 contract succeeded. The wire alphabet and proper-list/u16/ASCII limits are
 unchanged; broader library values need an explicitly extended codec.
+
+
+R04/R05 generic total-program claims use the same inert transport and external
+expected-claim policy. The process corpus independently constructs a small
+algebraic identity program, construction derivation and quantified proof, then
+checks valid, forged, incomplete and exhausted admission artifacts. No production
+Python semantic checker or executable artifact loader is added. Larger proof
+artifacts can exceed the service's unchanged 8192-byte frame limit; the in-memory
+codec supports larger configured budgets, not an automatic transport upgrade.

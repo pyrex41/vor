@@ -100,3 +100,15 @@ preservation, determinism, producer/acceptance adequacy, indexed correspondence,
 and remaining host assumptions. These map to the existing R03 normalization,
 evaluation, and determinism goals and R16 correspondence work. No registry
 obligation is converted from open to proved by implementing or testing a checker.
+
+
+## R04/R05 construction additions
+
+The initial-algebra rule corpus and source-bound generic arithmetic/list/function
+proofs now check. DATA.md specifies formation and the three additional logical
+rules; ADMISSION.md lists the exact residual metatheory. In particular no example
+proof discharges r04-induction, r04-arithmetic, r04-boolean-embedding or
+r05-construction/r05-totality/r05-admission as implementation-wide theorems.
+Those 57 registry obligations remain open. Additional accepted generic claims
+refer to their exact program/signature/contracts and the reviewed root, not to
+all unrestricted Shen or the correctness of the admission checker itself.

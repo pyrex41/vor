@@ -56,6 +56,10 @@
     (and (vor.program-call? P Name Args) (vor.program-outcome? Outcome))
   [source Source] admitted-shen-0 [normalizes P] concrete-derivation ->
     (= (vor.normalize Source) [ok P])
+  [total-program P Sig Cs] total-shen-1 [total-contracts] generic-proof ->
+    (vor.admission-domain? P Sig Cs)
+  [total-program P Sig Cs] total-shen-1 [theorem Theorem] generic-proof ->
+    (and (vor.admission-domain? P Sig Cs) (vor.fol-formula? Sig [] Theorem))
   _ _ _ _ -> false)
 
 (define vor.claim-root
