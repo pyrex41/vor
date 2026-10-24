@@ -1,4 +1,4 @@
-.PHONY: bootstrap test demo plan boundary-demo test-kernel
+.PHONY: bootstrap test demo plan boundary-demo test-kernel logic-demo
 bootstrap:
 	./scripts/bootstrap
 test:
@@ -13,3 +13,6 @@ boundary-demo:
 
 test-kernel:
 	./scripts/test-kernel
+
+logic-demo:
+	./scripts/shen -l vor.shen -l examples/first-order.shen -e '(fol-demo.check)' -e '(fol-demo.typed)'

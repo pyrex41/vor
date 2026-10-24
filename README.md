@@ -8,8 +8,8 @@ observation tracking. Shen's programmable type system checks evidence indexed
 by the exact model, state, transition endpoints, or logical proposition.
 
 **Status: implemented foundation, not a verified Shen compiler or a proof of
-arbitrary application correctness.** The initial semantic domain is finite
-Boolean state machines. See [the trust boundary](docs/TRUST.md) before
+arbitrary application correctness.** Supported domains are finite Boolean state
+machines and explicit constructive first-order derivations. See [the trust boundary](docs/TRUST.md) before
 interpreting an acceptance result.
 
 ## Run
@@ -28,6 +28,7 @@ make test
 make test-kernel
 make demo
 make boundary-demo
+make logic-demo
 ```
 
 Pinned binaries are provided for Linux x86_64 and macOS arm64. Linux is the
@@ -98,6 +99,19 @@ their assumptions and endpoints; a bare Boolean or a forged `accepted` record
 is not evidence. The inference rules and the bounded explicit proof checker
 are in `shen/proof.shen`. Annotated elimination rules decode literal syntax and
 delegate to that checker; these are not independent proof kernels.
+
+## First-order proof kernel
+
+R02 adds a fixed 20-rule constructive first-order kernel with sorted signatures,
+de Bruijn scopes, capture-avoiding instantiation, equality, quantifiers, and a
+reserved finite-tree induction principle. `vor.fol-check` checks explicit proof
+trees; `vor.fol-typecheck` checks the exact indexed System S judgment.
+
+`make logic-demo` checks a closed quantified implication theorem from eight
+proof nodes. See [the logic contract](docs/LOGIC.md) and
+[metatheory/root obligations](docs/LOGIC-METATHEORY.md). The accepted derivations
+are relative to this trusted implementation and root theory; generic checker
+soundness, program admission, and host preservation remain open.
 
 ## Exact claims and inert artifacts
 

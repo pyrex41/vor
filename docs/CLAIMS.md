@@ -1,8 +1,9 @@
 # Exact claims and inert artifacts (R01 foundation)
 
-This implements claim binding for the existing VOR/0 and propositional APIs.
-It does not implement generic Shen program admission, compiler preservation,
-implementation refinement, or a new proof kernel. R01's generic obligations
+The claim boundary binds the VOR/0 and propositional APIs and the R02
+first-order extension described below. The boundary itself does not implement
+generic Shen program admission, compiler preservation, implementation refinement,
+or the proof rules; it delegates to the selected semantic kernel. R01's generic obligations
 and the existing soundness obligations remain open.
 
 ## One expected claim, one submitted witness
@@ -45,6 +46,12 @@ cannot bypass this path.
 | `logic` | `intuitionistic-propositions` | `[derives G P]` | `concrete-derivation` | `vor.proof G P Evidence ProofDepth` |
 
 Models, formulas, and contexts must already meet their existing closed grammar.
+The R02 extension additionally accepts subject `[first-order Sig Vars]`, domain
+`constructive-first-order`, judgment `[derives Gamma Target]`, and kind
+`concrete-derivation`, checked by `vor.fol-check` with the supplied proof fuel.
+The exact signature, free-variable scope, context, and conclusion are bound.
+See LOGIC.md for its fixed rules and reserved induction premise.
+
 Unsupported subjects, domains, kinds, and judgments are rejected, including
 `generic-proof` and arbitrary Shen source definitions. Exact model identity
 includes the invariant and every rule. The trace is part of its expected claim,
@@ -60,7 +67,9 @@ consumers must recheck evidence rather than trusting a supplied success record.
 `vor.typecheck-claim Root Expected Artifact` checks the indexed System S judgment
 `[vor-bound-evidence Root Expected]`. Its datatype rule decodes literal cons
 syntax without evaluation, then delegates to the same claim checker (proof depth
-1000). This is not an independent proof kernel or a proof of rule soundness.
+1000). This is not an independent proof kernel or a proof of rule soundness. The public
+wrapper prechecks evidence and propagates unknown before inference, including
+exhaustion of its fixed proof limit.
 
 ## Bounded inert byte-list grammar
 
