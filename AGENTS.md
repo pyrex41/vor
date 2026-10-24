@@ -2,8 +2,9 @@
 
 - Read README.md, docs/SEMANTICS.md, docs/TRUST.md, and
   docs/PROOF-OBLIGATIONS.md before changing acceptance semantics.
-- Use ShenOSKernel 43.1 from Shen-Language/shen-sources with PR #117,
-  hosted on tizoc/shen-scheme on Chez. Host and kernel versions are distinct.
+- Use the shared pyrex41/shen-scheme v0.52-pyrex41.5 on Chez. Its pinned
+  ShenOSKernel 43.1 and PR #117 identities are recorded in toolchain.lock.json;
+  host and kernel versions are distinct.
   `make bootstrap` installs pinned artifacts; `make test` is the main gate.
 - Keep models/proofs inert. Never evaluate artifact-supplied code.
 - Keep producers outside acceptance. No budget exhaustion, host error,

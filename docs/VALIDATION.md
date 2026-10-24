@@ -1,4 +1,8 @@
-# Initial foundation validation
+# Historical foundation validation
+
+The following receipts predate the shared-runtime migration. They apply to the
+original upstream v0.52 host plus PR #117 overlay and are not current-host
+qualification.
 
 Tested on Linux x86_64 with the checksum-pinned Tizoc Shen-Scheme v0.52 binary
 and the complete `t-star.shen` from Shen kernel PR #117 merge commit
@@ -109,3 +113,24 @@ and the remaining universal constructive-soundness/termination obligations.
 The initial finite-tree algebra and root rules are explicitly trusted premises.
 The implementation does not prove its own consistency, syntax/derivation
 encoding adequacy, generic application admission, or compilation preservation.
+
+
+## Shared-runtime migration: 2026-10-23
+
+Current host: `pyrex41/shen-scheme v0.52-pyrex41.5`, with the archive hashes
+and source/upstream-basis identities in `toolchain.lock.json`. The complete
+`ec16a9f` typechecker is loaded separately, SHA-256
+`480e26c610b593b66f87118ea2fbeacaf34201e42f2279a09decfb9481879168`.
+The published binary's version banner does not establish PR #117 inclusion.
+
+- macOS arm64: verified binary archive, `make bootstrap`, `make test`
+  (**167 passed**) and `make demo`.
+- Ubuntu 24.04 x86_64, existing `shen-ci` guest: verified source archive,
+  built Chez/Shen-Scheme, checked overlay helper arities, and ran `make test`
+  (**167 passed**). Source build has a ten-minute deadline plus kill grace.
+- `sh -n scripts/bootstrap scripts/shen` and `git diff --check` passed.
+
+These are fresh runtime/conformance results. The historical upstream 134-test
+receipt above has not been rerun as a current-host kernel qualification. No
+mathematical obligation, compiler correctness claim, application integration,
+or implementation refinement gate is promoted by this runtime change.
