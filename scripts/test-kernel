@@ -5,7 +5,8 @@ cd "$(dirname "$0")/.."
 root=$(pwd)
 revision=8d261518db17fbfec32d1b268b40ed216b925c74
 source_dir=.tools/shen-scheme-source
-[ -f .tools/host-path ] || { echo 'Run make bootstrap first.' >&2; exit 2; }
+host_path=".tools/host-path-$(uname -s)-$(uname -m)"
+[ -f "$host_path" ] || { echo 'Run make bootstrap first.' >&2; exit 2; }
 if [ ! -d "$source_dir" ]; then
   git clone https://github.com/tizoc/shen-scheme.git "$source_dir"
   git -C "$source_dir" checkout --detach "$revision"
@@ -19,7 +20,7 @@ fi
 # Validate host/kernel configuration through the regular launcher before running
 # from the upstream working directory (its test loader uses relative paths).
 ./scripts/shen -e kernel-suite-host-ready
-host=$(cat .tools/host-path)
+host=$(cat "$host_path")
 cd "$source_dir"
 # The upstream kerneltests file resets counters at its end. Retain them so the
 # final assertion can enforce 134/0; assertion bodies remain untouched.

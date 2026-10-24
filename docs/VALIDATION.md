@@ -1,4 +1,8 @@
-# Initial foundation validation
+# Historical foundation validation
+
+The following receipts predate the shared-runtime migration. They apply to the
+original upstream v0.52 host plus PR #117 overlay and are not current-host
+qualification.
 
 Tested on Linux x86_64 with the checksum-pinned Tizoc Shen-Scheme v0.52 binary
 and the complete `t-star.shen` from Shen kernel PR #117 merge commit
@@ -109,3 +113,46 @@ and the remaining universal constructive-soundness/termination obligations.
 The initial finite-tree algebra and root rules are explicitly trusted premises.
 The implementation does not prove its own consistency, syntax/derivation
 encoding adequacy, generic application admission, or compilation preservation.
+
+
+## Shared-runtime migration: 2026-10-23
+
+Current host: `pyrex41/shen-scheme v0.52-pyrex41.5`, with the archive hashes
+and source/upstream-basis identities in `toolchain.lock.json`. The complete
+`ec16a9f` typechecker is loaded separately, SHA-256
+`480e26c610b593b66f87118ea2fbeacaf34201e42f2279a09decfb9481879168`.
+The published binary's version banner does not establish PR #117 inclusion.
+
+- macOS arm64: verified binary archive, `make bootstrap`, `make test`
+  (**167 passed**) and `make demo`.
+- Ubuntu 24.04 x86_64, existing `shen-ci` guest: verified source archive,
+  built Chez/Shen-Scheme, checked overlay helper arities, and ran `make test`
+  (**167 passed**). Source build has a ten-minute deadline plus kill grace.
+- `sh -n scripts/bootstrap scripts/shen` and `git diff --check` passed.
+
+These are fresh runtime/conformance results. The historical upstream 134-test
+receipt above has not been rerun as a current-host kernel qualification. No
+mathematical obligation, compiler correctness claim, application integration,
+or implementation refinement gate is promoted by this runtime change.
+
+## Combined R01/R02 and shared runtime: 2026-10-24
+
+The integrated tree combines the claim/artifact and first-order kernel changes
+with the shared `v0.52-pyrex41.5` runtime. On macOS arm64, the checksum-pinned
+archive and exact PR #117 overlay passed:
+
+- `make test`: **74,130 checks passed**.
+- `make test-kernel`: **134 passed, 0 failed**, using the pinned upstream test
+  checkout and the same shared runtime/overlay.
+- `make demo boundary-demo logic-demo plan`: passed, retaining all generic
+  proof obligations as open.
+- Whitespace and shell syntax checks passed.
+
+The integration preserves the explicit kernel 43.1 guard and the Chez/helper
+checks. The upstream-test launcher now reads the platform-specific host-path
+cache used by bootstrap. Earlier sections remain historical at their stated
+hosts; this does not retroactively refresh their evidence. The exact-head hosted
+checks for the integration are separate from this local receipt. Independent
+review found no concrete first-order scope/fuel defect, while retaining the
+documented operational limits around symbol interning and physical resources.
+This is no claim of generic soundness, application admission or refinement.

@@ -1,27 +1,67 @@
 #!/bin/sh
-# Pinned upstream host plus PR #117's exact typechecker. No npm/JS runtime.
+# Pinned shared pyrex41 Shen-Scheme host. No npm/JS runtime.
 set -eu
 cd "$(dirname "$0")/.."
 mkdir -p .tools/downloads .tools/host
-case "$(uname -s):$(uname -m)" in
-  Linux:x86_64)
-    asset=linux-x64
-    expected=aa711f576ea0ec96d86b0120eeba875153317a9af9e6a69f9c6ef4c00a4ad8c9
-    directory=shen-scheme-v0.52-linux-bin ;;
-  Darwin:arm64)
-    asset=macOS-arm64
-    expected=44e980d192d156859d06374e554813e1dc1e81210b95e9b1e23eb5e85276106b
-    directory=shen-scheme-v0.52-macOS-bin ;;
-  *) echo 'Pinned binaries support Linux x86_64 and macOS arm64.' >&2; exit 2 ;;
-esac
+host_path=".tools/host-path-$(uname -s)-$(uname -m)"
 hash() {
   if command -v sha256sum >/dev/null 2>&1; then sha256sum "$1" | cut -d ' ' -f 1
   else shasum -a 256 "$1" | cut -d ' ' -f 1; fi
 }
-archive=".tools/downloads/shen-scheme-v0.52-$asset-bin.tar.gz"
+case "$(uname -s):$(uname -m)" in
+  Linux:x86_64|Linux:aarch64)
+    source_archive=".tools/downloads/shen-scheme-v0.52-pyrex41.5-src.tar.gz"
+    if [ ! -f "$source_archive" ]; then
+      curl --fail --location --retry 3 --connect-timeout 15 --max-time 180 \
+        "https://github.com/pyrex41/shen-scheme/releases/download/v0.52-pyrex41.5/shen-scheme-v0.52-pyrex41.5-src.tar.gz" \
+        -o "$source_archive.partial"
+      mv "$source_archive.partial" "$source_archive"
+    fi
+    [ "$(hash "$source_archive")" = c57f47586894534b9797daf5c0cc65c58dc6fb89d6ea6f0c2b48ac64de66d010 ] || {
+      echo 'Shen-Scheme source checksum mismatch' >&2; exit 1;
+    }
+    directory=.tools/source/shen-scheme-v0.52-pyrex41.5-src
+    if [ ! -x "$directory/_build/bin/shen-scheme" ]; then
+      mkdir -p .tools/source
+      if [ ! -d "$directory" ]; then
+        rm -rf "$directory.partial"
+        mkdir "$directory.partial"
+        tar xzf "$source_archive" --no-same-owner --strip-components=1 -C "$directory.partial"
+        mv "$directory.partial" "$directory"
+      fi
+      command -v timeout >/dev/null 2>&1 || {
+        echo 'Linux source bootstrap requires coreutils timeout.' >&2; exit 2;
+      }
+      if [ "$(cc -print-file-name=libuuid.so)" != libuuid.so ]; then
+        timeout --kill-after=15s 10m make -C "$directory"
+      else
+        echo 'libuuid development library unavailable; building without optional UUID linkage.' >&2
+        timeout --kill-after=15s 10m make -C "$directory" linkerflags='-lm -ldl -lpthread'
+      fi
+    fi
+    kernel=.tools/t-star-pr117.shen
+    if [ ! -f "$kernel" ]; then
+      curl --fail --location --retry 3 --connect-timeout 15 --max-time 60 \
+        https://raw.githubusercontent.com/Shen-Language/shen-sources/ec16a9fa4fc2e87e2aa336fb1ae30e8ac2266394/sources/t-star.shen \
+        -o "$kernel.partial"
+      mv "$kernel.partial" "$kernel"
+    fi
+    [ "$(hash "$kernel")" = 480e26c610b593b66f87118ea2fbeacaf34201e42f2279a09decfb9481879168 ] || {
+      echo 'PR 117 typechecker checksum mismatch' >&2; exit 1;
+    }
+    printf '%s\n' "$directory/_build/bin/shen-scheme" > "$host_path"
+    echo 'Pinned Shen-Scheme source built.'
+    exit 0 ;;
+  Darwin:arm64)
+    asset=macOS-arm64
+    expected=1dbbdfd4dbfc64383edf2ee08a788cb410bb3f5104e3b6b32204e443baeb3ff9
+    directory=shen-scheme-v0.52-pyrex41.5-macOS-bin ;;
+  *) echo 'Pinned binaries support Linux x86_64 and macOS arm64.' >&2; exit 2 ;;
+esac
+archive=".tools/downloads/shen-scheme-v0.52-pyrex41.5-$asset-bin.tar.gz"
 if [ ! -f "$archive" ]; then
   curl --fail --location --retry 3 --connect-timeout 15 --max-time 180 \
-    "https://github.com/tizoc/shen-scheme/releases/download/v0.52/shen-scheme-v0.52-$asset-bin.tar.gz" \
+    "https://github.com/pyrex41/shen-scheme/releases/download/v0.52-pyrex41.5/shen-scheme-v0.52-pyrex41.5-$asset-bin.tar.gz" \
     -o "$archive.partial"
   mv "$archive.partial" "$archive"
 fi
@@ -37,5 +77,5 @@ fi
 [ "$(hash "$kernel")" = 480e26c610b593b66f87118ea2fbeacaf34201e42f2279a09decfb9481879168 ] || {
   echo 'PR 117 typechecker checksum mismatch' >&2; exit 1;
 }
-printf '%s\n' ".tools/host/$directory/bin/shen-scheme" > .tools/host-path
-echo 'Pinned Shen-Scheme and PR 117 ready.'
+printf '%s\n' ".tools/host/$directory/bin/shen-scheme" > "$host_path"
+echo 'Pinned Shen-Scheme binary ready.'

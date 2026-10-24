@@ -1,18 +1,22 @@
 {
   "schema": "vor-toolchain-0",
-  "host": "https://github.com/tizoc/shen-scheme",
-  "release": "v0.52",
-  "host_source_reviewed": "8d261518db17fbfec32d1b268b40ed216b925c74",
+  "host": "https://github.com/pyrex41/shen-scheme",
+  "release": "v0.52-pyrex41.5",
+  "host_source_archive_sha256": "c57f47586894534b9797daf5c0cc65c58dc6fb89d6ea6f0c2b48ac64de66d010",
   "host_archive_sha256": {
-    "linux-x64": "aa711f576ea0ec96d86b0120eeba875153317a9af9e6a69f9c6ef4c00a4ad8c9",
-    "macOS-arm64": "44e980d192d156859d06374e554813e1dc1e81210b95e9b1e23eb5e85276106b"
+    "linux-x64": null,
+    "macOS-arm64": "1dbbdfd4dbfc64383edf2ee08a788cb410bb3f5104e3b6b32204e443baeb3ff9"
   },
   "required_kernel_pr": "https://github.com/Shen-Language/shen-sources/pull/117",
   "required_kernel_commit": "ec16a9fa4fc2e87e2aa336fb1ae30e8ac2266394",
+  "kernel_source_commit": "ec16a9fa4fc2e87e2aa336fb1ae30e8ac2266394",
+  "kernel_policy": "Load the complete pinned typechecker before any V\u00f6r module; the release and overlay identities are both verified.",
   "overlay_path": "sources/t-star.shen",
   "overlay_sha256": "480e26c610b593b66f87118ea2fbeacaf34201e42f2279a09decfb9481879168",
   "overlay_policy": "Load the complete pinned typechecker before any Vor module. Never infer PR inclusion from a version string.",
   "kernel_repository": "https://github.com/Shen-Language/shen-sources",
   "kernel_version": "43.1",
-  "kernel_base_tag": "shen-43.1"
+  "kernel_base_tag": "shen-43.1",
+  "host_source_commit": "680e2e95ed9dd0ca6d2f688453efca2a37e50021",
+  "host_upstream_basis": "8d261518db17fbfec32d1b268b40ed216b925c74"
 }
