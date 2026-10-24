@@ -71,7 +71,10 @@ def run_worker(command, body, root, timeout=5):
         return reply, bytes(buffers["err"])
     finally:
         selector.close()
-        if not complete and child.returncode is None:
+        if not complete:
+            # The worker owns the fresh process group.  The leader can have
+            # exited (and been reaped) while descendants still hold neither
+            # pipe open; cleanup must still terminate those descendants.
             try:
                 os.killpg(child.pid, signal.SIGKILL)
             except ProcessLookupError:
