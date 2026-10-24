@@ -14,8 +14,10 @@ interpreting an acceptance result.
 
 ## Run
 
-The primary host is **Tizoc's Shen-Scheme on Chez**. Bootstrap pins upstream
-v0.52 by archive SHA-256 and loads the exact typechecker from
+The required kernel is **ShenOSKernel 43.1 from
+[Shen-Language/shen-sources](https://github.com/Shen-Language/shen-sources),
+with PR #117**. Its host is **Tizoc's Shen-Scheme on Chez**. Bootstrap pins
+the host release v0.52 by archive SHA-256 and loads the exact typechecker from
 [Shen kernel PR #117](https://github.com/Shen-Language/shen-sources/pull/117),
 also by SHA-256. No JavaScript runtime is used. PR #117 belongs to the kernel
 repository, not to shen-scheme.
@@ -23,13 +25,17 @@ repository, not to shen-scheme.
 ```sh
 make bootstrap
 make test
+make test-kernel
 make demo
+make boundary-demo
 ```
 
 Pinned binaries are provided for Linux x86_64 and macOS arm64. Linux is the
 initial tested platform. `toolchain.lock.json` records provenance. Downloads and
 host files remain in `.tools/`. `scripts/shen` installs and checks the PR #117
-helpers on every invocation; it does not assume the release already has them.
+helpers on every invocation and refuses a kernel other than 43.1; it does not
+assume the host release already includes the PR. The host release number
+(v0.52) is distinct from the Shen kernel version (43.1).
 
 ## A model and its evidence
 
@@ -92,6 +98,19 @@ their assumptions and endpoints; a bare Boolean or a forged `accepted` record
 is not evidence. The inference rules and the bounded explicit proof checker
 are in `shen/proof.shen`. Annotated elimination rules decode literal syntax and
 delegate to that checker; these are not independent proof kernels.
+
+## Exact claims and inert artifacts
+
+`vor.check-claim` binds an existing finite certificate, trace, or propositional
+witness to the verifier's exact expected claim, including root identity,
+dependencies, assumptions, domain, and judgment. `vor.typecheck-claim` exposes
+that binding as an indexed System S judgment. `vor.check-artifact` decodes a
+bounded inert byte-list envelope before checking it; no source reader or eval
+is used. The verifier supplies the expected claim separately from the artifact.
+
+See [the grammar and trust limits](docs/CLAIMS.md) and the
+[current execution plan](docs/ADVANCEMENT.md). This is the R01 foundation for
+existing domains, not generic program admission or the ShenCheck wire service.
 
 ## Relationship to existing projects
 
