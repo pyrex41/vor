@@ -1,0 +1,31 @@
+#!/bin/sh
+# R00: run the upstream assertions on the same pinned host and overlay.
+set -eu
+cd "$(dirname "$0")/.."
+root=$(pwd)
+revision=8d261518db17fbfec32d1b268b40ed216b925c74
+source_dir=.tools/shen-scheme-source
+[ -f .tools/host-path ] || { echo 'Run make bootstrap first.' >&2; exit 2; }
+if [ ! -d "$source_dir" ]; then
+  git clone https://github.com/tizoc/shen-scheme.git "$source_dir"
+  git -C "$source_dir" checkout --detach "$revision"
+fi
+[ "$(git -C "$source_dir" rev-parse HEAD)" = "$revision" ] || {
+  echo 'Upstream test checkout has the wrong revision; preserving it.' >&2; exit 1;
+}
+[ -z "$(git -C "$source_dir" status --porcelain)" ] || {
+  echo 'Upstream test checkout is dirty; preserving it.' >&2; exit 1;
+}
+# Validate host/kernel configuration through the regular launcher before running
+# from the upstream working directory (its test loader uses relative paths).
+./scripts/shen -e kernel-suite-host-ready
+host=$(cat .tools/host-path)
+cd "$source_dir"
+# The upstream kerneltests file resets counters at its end. Retain them so the
+# final assertion can enforce 134/0; assertion bodies remain untouched.
+exec "$root/$host" eval -l "$root/.tools/t-star-pr117.shen" \
+  -e '(cd "shen-test-programs")' -l harness.shen \
+  -e '(reset)' \
+  -e '(define reset -> counts-retained)' \
+  -l kerneltests.shen \
+  -e '(if (and (= (value test-harness.*passed*) 134) (= (value test-harness.*failed*) 0)) upstream-suite-passed (simple-error "upstream kernel assertion count or result mismatch"))' </dev/null

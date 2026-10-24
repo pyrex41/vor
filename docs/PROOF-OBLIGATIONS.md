@@ -55,3 +55,19 @@ contracts, contract composition, invariant preservation, effect/resource
 closure, assumption retention, and exact source/dependency identity. Tests of
 the roadmap schema establish none of these. R17 requires the matching proof
 closure and permits no conversion of test evidence into generic proof.
+
+
+## R01 executable boundary additions (all open)
+
+- Exact-claim acceptance binds every declared field and retains the assumptions
+  of its checked payload; future composition must preserve dependency closure.
+- `unpack(pack(v)) = v` on the admitted codec domain, and for accepted bytes,
+  `pack(unpack(b)) = b`, with exactly the stated budget conditions.
+- Codec validation/decoding terminates on finite bounded input; malformed,
+  truncated, trailing, or exhausted input cannot yield accepted evidence.
+- The public `vor-bound-evidence` judgment corresponds to the same exact-claim
+  acceptance, including literal decoding and its fixed proof-depth limit.
+
+These have executable implementations and hostile tests, not checked generic
+soundness/termination proofs. The registry now adds three open R01 goals for
+codec round-trip, totality, and bound correspondence (57 total goals).

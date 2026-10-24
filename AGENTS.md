@@ -2,7 +2,8 @@
 
 - Read README.md, docs/SEMANTICS.md, docs/TRUST.md, and
   docs/PROOF-OBLIGATIONS.md before changing acceptance semantics.
-- Use tizoc/shen-scheme on Chez with Shen-Language/shen-sources PR #117.
+- Use ShenOSKernel 43.1 from Shen-Language/shen-sources with PR #117,
+  hosted on tizoc/shen-scheme on Chez. Host and kernel versions are distinct.
   `make bootstrap` installs pinned artifacts; `make test` is the main gate.
 - Keep models/proofs inert. Never evaluate artifact-supplied code.
 - Keep producers outside acceptance. No budget exhaustion, host error,

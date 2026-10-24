@@ -20,7 +20,8 @@ and external-effect correctness remain distinct theorems.
 
 All specifications, executable semantics, proof rules, admission logic, proof
 construction, and verification orchestration are to be Shen. Tizoc's
-Shen-Scheme on Chez, including Shen kernel PR #117, is the primary host. Small
+Shen-Scheme on Chez is the primary host. The required kernel is ShenOSKernel
+43.1 from Shen-Language/shen-sources, including that repository's PR #117. Small
 OS/bootstrap scripts may launch the image and capture bytes; they must not
 decide theorem validity. Lean/Rocq are not prerequisites. If later used for an
 independent audit, they must not become a second application specification.

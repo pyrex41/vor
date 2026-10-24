@@ -32,3 +32,13 @@ Those need explicit outcomes and semantics before they can enter a claim.
 Pending refinement proofs, checking an implementation's recorded traces does
 not imply all implementation executions are permitted. A specification may
 also faithfully express the wrong requirements.
+
+
+The R01 claim boundary additionally trusts `spec/claims.shen`,
+`kernel/identity.shen`, and `kernel/artifact.shen`. Expected root and claim must
+come from trusted verifier configuration, not from the submitted envelope.
+Root strings declare identity; they do not measure or authenticate this image.
+Declared dependencies/assumptions are retained as data, not proved true or
+admitted transitively. The indexed claim datatype delegates to the same checker
+and is not an independent kernel. See CLAIMS.md for the restricted codec domain
+and the distinction between syntactic budgets and process resource isolation.

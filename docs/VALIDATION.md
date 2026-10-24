@@ -38,3 +38,32 @@ reported open. Its negative cases reject dependency cycles, missing/forward
 dependencies, duplicate stages/goals, improper data, unknown evidence kinds,
 and self-reported completion fields. These are planning checks, not new proofs
 of Vör's mathematical correctness. No acceptance-kernel semantics changed.
+
+## R01 claim and artifact boundary
+
+On the same pinned Linux x86_64 host (ShenOSKernel 43.1 with PR #117):
+
+- The unchanged foundation reproduced **167 passing checks** before edits.
+- `make test`: **795 checks passed** after adding exact-claim binding, indexed
+  claim evidence, inert byte-list encoding/decoding, and assumption regressions.
+- The corpus includes all 256 one-byte inputs, every proper prefix of a complete
+  propositional envelope, independent fixed byte vectors, exact/exhausted budget
+  edges, unsupported values, forged acceptance, substituted dependencies and
+  assumptions, literal injection attempts, and transient invariant failures.
+- `make boundary-demo`: the encoded finite certificate was checked against the
+  separately supplied expected claim; a forged acceptance payload was rejected.
+- `make test-kernel`: **134 upstream assertions passed, 0 failed** against the
+  clean pinned source checkout at `8d261518db17fbfec32d1b268b40ed216b925c74`.
+  The runner retains the upstream harness counters instead of its final reset,
+  then checks the exact counts in Shen. It does not change assertion bodies or
+  the kernel. stdin is closed so a failure cannot wait for interactive input.
+- `git diff --check` and shell syntax validation passed.
+
+The upstream suite is now an executable Make target and a hosted workflow step.
+The previously published hosted runs did not start: GitHub's annotation reported
+account payment/spending-limit restrictions. Local results do not establish
+hosted CI success, and this change does not alter account billing settings.
+
+All original proof obligations remain open. Three additional R01 obligations
+record codec round-trip, codec totality, and indexed-bound correspondence (57
+registry goals total). No tests above discharge those generic theorems.
