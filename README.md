@@ -147,3 +147,8 @@ indexed transfer example, effects, and the trusted root.
 `make plan` executes the Shen roadmap registry and lists its open obligations.
 Registry validity is a planning check, not proof that a wave is complete. The
 current foundation does not yet prove generic program correctness by construction.
+
+The experimental [one-shot checker transport](service/README.md) accepts inert
+VOR-DATA/0 frames under a trusted startup configuration. Run `make test-service`
+for its hostile process corpus. This is a transport prerequisite; ShenCheck and
+BEAM refinement remain open.
