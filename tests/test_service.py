@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Independent transport corpus; it never decides VOR semantic validity."""
-import copy, importlib.util, io, os, struct, subprocess, sys, tempfile, threading, time, unittest
+import copy, importlib.util, io, os, signal, struct, subprocess, sys, tempfile, threading, time, unittest
 from pathlib import Path
 
 ROOT = os.path.dirname(os.path.dirname(__file__))
@@ -120,6 +120,33 @@ class TransportTests(unittest.TestCase):
         with self.assertRaises(launcher.ServiceError):
             self.worker("import os,time; os.close(1); os.close(2); time.sleep(10)", .2)
         self.assertLess(time.monotonic()-start, 2)
+
+    def test_failed_reaped_leader_does_not_leak_process_group(self):
+        with tempfile.TemporaryDirectory() as directory:
+            pid_path = Path(directory) / "descendant.pid"
+            marker_path = Path(directory) / "descendant.alive"
+            code = (
+                "import os,time\n"
+                "pid=os.fork()\n"
+                "if pid: os._exit(1)\n"
+                "with open(%r, 'w') as f: f.write(str(os.getpid()))\n"
+                "os.close(1); os.close(2)\n"
+                "time.sleep(.6)\n"
+                "open(%r, 'w').close()\n"
+            ) % (str(pid_path), str(marker_path))
+            with self.assertRaises(launcher.ServiceError):
+                self.worker(code, 2)
+            deadline = time.monotonic() + 1
+            while time.monotonic() < deadline and not pid_path.exists():
+                time.sleep(.01)
+            self.assertTrue(pid_path.exists())
+            time.sleep(.8)
+            self.assertFalse(marker_path.exists())
+            if pid_path.exists():
+                try:
+                    os.kill(int(pid_path.read_text()), signal.SIGKILL)
+                except (OSError, ValueError):
+                    pass
 
     def test_transport_truncation_trailing_and_bounds(self):
         good = bytes([17])+enc(envelope_value())
