@@ -71,3 +71,18 @@ closure and permits no conversion of test evidence into generic proof.
 These have executable implementations and hostile tests, not checked generic
 soundness/termination proofs. The registry now adds three open R01 goals for
 codec round-trip, totality, and bound correspondence (57 total goals).
+
+
+## R02 first-order kernel (generic discharge remains open)
+
+The executable inventory, typed formation checks, de Bruijn shifts/substitution,
+20 fixed inference rules, reserved finite-tree induction, and indexed claim
+integration now exist. The rule corpus includes hostile scope/equality cases
+and independent classical finite-model and constructive Kripke reference checks.
+
+The exact signature/formation, weakening, substitution, goal-formation,
+per-rule soundness, threaded-fuel termination, finite-tree encoding, and indexed
+judgment correspondence obligations are stated in LOGIC-METATHEORY.md. They map
+to the existing R02 root/formation/corpus goals, R04 induction/substitution work,
+and R16 checker soundness/totality/correspondence. The registry still records
+57 required goals; a new implementation does not automatically discharge them.

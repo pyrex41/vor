@@ -28,7 +28,9 @@
   [vor-claim 0 _ [model M] _ _ boolean-states [trace-prefix T] trace-check] E _ ->
     (if (= T E) (vor.trace M E) [rejected trace-mismatch])
   [vor-claim 0 _ logic _ _ intuitionistic-propositions [derives G P] concrete-derivation] E D ->
-    (vor.proof G P E D))
+    (vor.proof G P E D)
+  [vor-claim 0 _ [first-order Sig Vars] _ _ constructive-first-order [derives G P] concrete-derivation] E Fuel ->
+    (vor.fol-check Sig Vars G P E Fuel))
 
 \\ Preserve the ENTIRE expected claim on success; not a reusable safe flag.
 \\ A supplied accepted record is never routed around the semantic checkers.
@@ -36,6 +38,7 @@
   C [accepted finite-invariant N] -> [checked C [accepted finite-invariant N]]
   C [accepted trace-prefix N] -> [checked C [accepted trace-prefix N]]
   C [accepted derivation] -> [checked C [accepted derivation]]
+  C [accepted first-order-derivation] -> [checked C [accepted first-order-derivation]]
   _ R -> R)
 
 \\ System S receives literal cons syntax. Decode only the closed data grammar;
@@ -70,9 +73,15 @@
     (if (and (vor.root? Root) (vor.claim? C))
       (if (= Root (vor.claim-root C))
         (trap-error
-          (if (vor.system-s? Artifact [vor-bound-evidence Root C])
-            [checked C [accepted typed-evidence]]
-            [rejected invalid-evidence])
+          (vor.typecheck-claim-result Root C Artifact (vor.check-claim Root C Artifact 1000))
           (/. E [unknown typechecker-error]))
         [rejected root-mismatch])
       [rejected malformed-claim]))
+
+
+(define vor.typecheck-claim-result
+  Root C Artifact [checked C _] ->
+    (if (vor.system-s? Artifact [vor-bound-evidence Root C])
+      [checked C [accepted typed-evidence]] [rejected invalid-evidence])
+  _ _ _ [unknown Reason] -> [unknown Reason]
+  _ _ _ _ -> [rejected invalid-evidence])

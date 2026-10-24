@@ -3,6 +3,8 @@
 (load "shen/explore.shen")
 (load "shen/proof.shen")
 (load "shen/observe.shen")
+(load "spec/logic.shen")
 (load "spec/claims.shen")
 (load "kernel/identity.shen")
 (load "kernel/artifact.shen")
+(load "kernel/proof.shen")
