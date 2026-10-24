@@ -57,3 +57,12 @@ without input sampling or caller-supplied axioms. See DATA.md and ADMISSION.md.
 The process service now also checks generic admission artifacts. This advances
 implementation and application proofs; it does not close the 57 root/metatheory
 obligations or authorize a generic transfer claim before R06's own derivations.
+
+
+The next soundness/preservation work now has actual optional Rocq/Coq theorem
+artifacts, a source drift manifest and per-symbolic-body translation certificates.
+The R02 scheduler is explicit work-list control; the R05 measure rule now permits
+changing other typed arguments and admits accumulator reversal under a quantified
+length proof. See audit/README.md for proved model/calculus results and the exact
+remaining bridges to production Shen and native execution. This advances R04/R05,
+R15/R16 proof work without renumbering or declaring their complete closure.

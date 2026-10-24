@@ -1,0 +1,107 @@
+#!/usr/bin/env python3
+"""Optional universal-proof audit; never an artifact-side inference rule."""
+import hashlib
+import copy
+import json
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+
+ROOT = Path(__file__).resolve().parent.parent
+OUT = ROOT / "build/audit"
+PROOFS = OUT / "rocq"
+MODULES = ["Checker", "Propositional", "Runtime", "Admission", "Compiler", "Validation", "CEK", "Certificates", "Assumptions"]
+
+
+def run(cmd, env=None):
+    r = subprocess.run(cmd, cwd=ROOT, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    if r.returncode:
+        print(r.stdout, end="", file=sys.stderr)
+        raise SystemExit(r.returncode)
+    return r.stdout
+
+
+def main():
+    env = os.environ.copy()
+    local = ROOT / ".tools/rocq-root"
+    coqc = env.get("COQC") or shutil.which("coqc")
+    coqchk = env.get("COQCHK") or shutil.which("coqchk")
+    if not coqc and (local / "usr/bin/coqc").exists():
+        coqc, coqchk = str(local / "usr/bin/coqc"), str(local / "usr/bin/coqchk")
+        env.update(COQLIB=str(local / "usr/lib/ocaml/coq"), OCAMLPATH=str(local / "usr/lib/ocaml"),
+                   OCAMLFIND_CONF=str(local / "etc/ocamlfind.conf"),
+                   CAML_LD_LIBRARY_PATH=str(local / "usr/lib/ocaml/stublibs"))
+    if not coqc or not coqchk:
+        raise SystemExit("Optional audit requires pinned Coq 8.18.0 coqc/coqchk (see audit/README.md).")
+    version = run([coqc, "--version"], env)
+    if "version 8.18.0" not in version:
+        raise SystemExit("Audit pin mismatch: expected Coq 8.18.0, got " + version)
+    lock = json.loads((ROOT / "audit/source-lock.json").read_text())
+    for path, wanted in lock["sources"].items():
+        if hashlib.sha256((ROOT / path).read_bytes()).hexdigest() != wanted:
+            raise SystemExit("Audit source drift requires explicit review: " + path)
+    PROOFS.mkdir(parents=True, exist_ok=True)
+    for module in MODULES:
+        path = ROOT / "audit/rocq" / (module + ".v")
+        if path.exists(): shutil.copyfile(path, PROOFS / path.name)
+    run([str(ROOT / "scripts/shen"), "-l", "audit/export.shen"], env)
+    fixture = OUT / "fixtures.bin"
+    print(run([sys.executable, "audit/render_certificates.py", str(fixture), str(PROOFS / "Certificates.v")], env), end="")
+    print(run([sys.executable, "-m", "unittest", "discover", "-s", "audit", "-p", "test_*.py"], env), end="")
+    if (PROOFS / "Certificates.v").read_text() != (ROOT / "audit/rocq/Certificates.v").read_text():
+        raise SystemExit("Symbolic-body certificates drifted; regenerate and review audit/rocq/Certificates.v.")
+    assumptions = ""
+    for module in MODULES:
+        assumptions += run([coqc, "-q", "-Q", str(PROOFS), "VorAudit", str(PROOFS / (module + ".v"))], env)
+    if "Axioms:" in assumptions or assumptions.count("Closed under the global context") != 20:
+        raise SystemExit("Unexpected theorem assumptions:\n" + assumptions)
+    (OUT / "assumptions.txt").write_text(assumptions)
+    # Negative certificates are reified independently of the Shen validator.
+    # Each must fail in a proof, not because of malformed generated syntax.
+    sys.path.insert(0, str(ROOT / "audit"))
+    import render_certificates as reify
+    from test_render_certificates import encode
+    packet = reify.decode(fixture.read_bytes())
+    mutations = []
+    missing = copy.deepcopy(packet); missing[3][3][0][3][0][3] = []
+    mutations.append(("missing-instruction", missing))
+    swapped = copy.deepcopy(packet)
+    code = swapped[3][3][0][3][1][3]; code[0], code[1] = code[1], code[0]
+    mutations.append(("reordered-constructor", swapped))
+    arity = copy.deepcopy(packet)
+    for fn in arity[3][3]:
+        found = False
+        for clause in fn[3]:
+            for inst in clause[3]:
+                if inst[0] == reify.Symbol("call"):
+                    inst[2] += 1; found = True; break
+            if found: break
+        if found: break
+    mutations.append(("wrong-call-arity", arity))
+    scope = copy.deepcopy(packet)
+    for fn in scope[3][3]:
+        for clause in fn[3]:
+            clause[3][:] = [i for i in clause[3] if i != [reify.Symbol("leave")]]
+    mutations.append(("lost-lexical-scope", scope))
+    for name, data in mutations:
+        text, _ = reify.render(encode(data))
+        target = PROOFS / ("Mutant_" + name.replace("-", "_") + ".v")
+        target.write_text(text)
+        result = subprocess.run([coqc, "-q", "-Q", str(PROOFS), "VorAudit", str(target)],
+                                cwd=ROOT, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        (OUT / (name + ".txt")).write_text(result.stdout)
+        if result.returncode == 0 or "Unable to unify" not in result.stdout:
+            raise SystemExit("Negative translation proof failed unexpectedly: " + name + "\n" + result.stdout)
+    print("4 malformed symbolic-body translations rejected by the proof kernel.")
+    checked = run([coqchk, "-silent", "-Q", str(PROOFS), "VorAudit"] + ["VorAudit." + m for m in MODULES], env)
+    (OUT / "coqchk.txt").write_text(checked)
+    report = {"coqc": version.strip(), "modules": MODULES, "axioms": [], "rejected_translation_mutants": len(mutations),
+              "fixture_sha256": hashlib.sha256(fixture.read_bytes()).hexdigest(),
+              "source_lock_sha256": hashlib.sha256((ROOT / "audit/source-lock.json").read_bytes()).hexdigest(),
+              "scope": "Audit models and symbolic-body translation validation; Shen/source and CEK correspondence remain explicit obligations."}
+    (OUT / "report.json").write_text(json.dumps(report, indent=2) + "\n")
+    print("Metatheory: 20 assumption-free theorem checks; 9 modules kernel-rechecked.")
+
+if __name__ == "__main__": main()

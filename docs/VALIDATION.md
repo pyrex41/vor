@@ -242,3 +242,44 @@ sampling. Native-number comparisons, mutation results and process tests remain
 test evidence. DATA.md and ADMISSION.md state the additional trusted rules and
 open generic checker, encoding, arithmetic, construction/admission, R03 adequacy
 and host-preservation metatheory. The 57 roadmap goals are not marked discharged.
+
+## Soundness/preservation audit and accumulator recursion
+
+Validated 2026-10-24 on the unchanged shared Chez/kernel43.1/PR117 host, plus
+optional locally extracted Coq 8.18.0 / OCaml 4.14.1 audit tools. The optional
+bootstrap verifies 18 exact archive checksums; no native compiler was changed.
+
+- `make test`: **76,888 checks passed**. The R02 work-list scheduler agrees with
+  the prior independent recursive scheduling fixture across the rule corpus and
+  budgets 0..20. Existing full first-order/algebra and hostile tests still pass.
+- `make test-kernel`: **134 passed, zero failed**.
+- `make test-service`: **15 passed**, with unchanged production transport policy.
+- `make test-metatheory`: **20 named universal theorem dependency checks**,
+  **nine modules independently kernel-rechecked**, no added global axioms;
+  **12 symbolic-body preservation certificates** for all environments and fixed
+  callee interpretations, and **10** strict reifier/transport tests. Four corrupted
+  translations fail in Rocq proofs (missing instruction, swapped constructor
+  evaluation, wrong call arity, missing lexical scope restoration).
+- `make test-construction-mutations`: **all five isolated mutants rejected**.
+- `make compiler-demo`: exact composed result from the validated instruction
+  artifact, using frozen reference calls and checked R03 call receipts.
+- Python syntax compilation, script syntax checks and `git diff --check` pass.
+
+The constructor/local/let/call compiler producer and independent prefix validator
+have hostile source/operand/scope/arity/order tests; exact compilation claims also
+check through indexed R01 envelopes and inert wire decoding. The qualification
+executor agrees with independent numeric addition on 81 bounded pairs and with
+exact list/accumulator examples. These are concrete test results, separate from
+the universal model/translation-validation theorems.
+
+Construction root version 2 now allows other typed arguments to change when the
+selected recursive argument is an immediate self-sort field. The independent
+well-founded order proof retains complete input identity and compares projections
+for definition rank and measured-value size. The new accumulator reversal length
+contract checks by induction generalized over every accumulator; addition's
+right-successor lemma is also checked generically in Shen.
+
+The universal audit statements and explicit interfaces are in audit/README.md.
+They do not silently prove all production source/model, full first-order,
+checker/calculus, ordered-callee or native host/compiler correspondences. Hash pins
+are drift evidence, not those bridges. The complete 57-goal closure remains open.

@@ -106,10 +106,9 @@
   _ _ _ _ _ _ R -> R)
 (define vor.admit-call
   Sig [construction Name Args M Actual Smaller Earlier] Name [typed-arguments Ts Args] ->
-    (if (and (vor.member? (vor.admit-at Ts M) Smaller)
-             (= (vor.without-at Ts M) (vor.without-at Actual M)))
+    (if (vor.member? (vor.admit-at Ts M) Smaller)
       (vor.admit-call-result Name Ts (vor.fol-function Name (vor.fol-functions Sig)))
-      [rejected nondecreasing-or-changed-parameters])
+      [rejected nondecreasing-recursion])
   Sig [construction _ _ _ _ _ Earlier] Name [typed-arguments Ts Ss] ->
     (if (vor.member? [Name Ss (vor.admit-function-result Name Sig)] Earlier)
       (vor.admit-call-result Name Ts (vor.fol-function Name (vor.fol-functions Sig)))
@@ -262,7 +261,7 @@
   _ _ _ _ _ _ R -> R)
 
 (define vor.construction-root-inventory
-  -> [vor-construction-root 1 [local constructor let call]
+  -> [vor-construction-root 2 [local constructor let call]
       [complete-ordered-constructor-coverage linear-patterns
-       strict-immediate-self-field unchanged-other-arguments earlier-dependencies]
+       strict-immediate-self-field typed-other-arguments earlier-dependencies]
       [initial-algebra-totality exact-r03-equations checked-first-order-postconditions]])

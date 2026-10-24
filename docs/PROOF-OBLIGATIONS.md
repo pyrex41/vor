@@ -112,3 +112,15 @@ r05-construction/r05-totality/r05-admission as implementation-wide theorems.
 Those 57 registry obligations remain open. Additional accepted generic claims
 refer to their exact program/signature/contracts and the reviewed root, not to
 all unrestricted Shen or the correctness of the admission checker itself.
+
+
+## Checked metatheory audit artifacts
+
+An optional independent audit now checks universal scheduler, quantifier-free
+logical-rule, finite-path, well-founded construction-calculus, stack compilation,
+translation-validation and R05-expression CEK theorems. It also checks generic
+preservation certificates for every symbolic body in the current executable demo.
+The proof-closure matrix in audit/README.md separates these results from the
+remaining source/reifier, full first-order, checker/calculus, callee and native
+preservation bridges. No requirement in the 57-goal registry is marked completed
+solely by a model theorem whose implementation correspondence remains unproved.

@@ -56,6 +56,8 @@
     (and (vor.program-call? P Name Args) (vor.program-outcome? Outcome))
   [source Source] admitted-shen-0 [normalizes P] concrete-derivation ->
     (= (vor.normalize Source) [ok P])
+  [program P] constructor-stack-0 [compiles Artifact] concrete-derivation ->
+    (and (vor.program? P) (vor.compiled-identity? P Artifact))
   [total-program P Sig Cs] total-shen-1 [total-contracts] generic-proof ->
     (vor.admission-domain? P Sig Cs)
   [total-program P Sig Cs] total-shen-1 [theorem Theorem] generic-proof ->

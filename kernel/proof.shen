@@ -20,19 +20,20 @@
   [proved _] -> [accepted first-order-derivation]
   R -> R)
 (define vor.fol-derive
-  _ _ _ _ _ 0 -> [unknown proof-fuel]
-  Sig V G P E Fuel ->
-    (vor.fol-expanded Sig (vor.fol-expand Sig V G P E) (- Fuel 1)))
-(define vor.fol-expanded
-  Sig [premises Goals] Fuel -> (vor.fol-run Sig Goals Fuel)
-  _ R _ -> R)
-(define vor.fol-run
+  Sig V G P E Fuel -> (vor.fol-work Sig [[goal V G P E]] Fuel))
+
+\\ Ordered depth-first work list: one shared node budget, no per-child reset.
+\\ audit/rocq/Checker.v proves the generic scheduler metatheorems. Local rule
+\\ validity and the Shen/model correspondence are separately tracked premises.
+(define vor.fol-work
   _ [] Fuel -> [proved Fuel]
-  Sig [[goal V G P E] | Goals] Fuel ->
-    (vor.fol-run-next Sig Goals (vor.fol-derive Sig V G P E Fuel)))
-(define vor.fol-run-next
-  Sig Goals [proved Fuel] -> (vor.fol-run Sig Goals Fuel)
-  _ _ R -> R)
+  _ [_ | _] 0 -> [unknown proof-fuel]
+  Sig [[goal V G P E] | Rest] Fuel ->
+    (vor.fol-work-expanded Sig Rest (- Fuel 1) (vor.fol-expand Sig V G P E))
+  _ _ _ -> [rejected malformed-first-order-work])
+(define vor.fol-work-expanded
+  Sig Rest Fuel [premises Children] -> (vor.fol-work Sig (append Children Rest) Fuel)
+  _ _ _ R -> R)
 
 (define vor.fol-expand
   _ _ G P [hyp N] ->

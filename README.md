@@ -32,6 +32,7 @@ make boundary-demo
 make logic-demo
 make program-demo
 make admission-demo
+make compiler-demo
 ```
 
 The published release includes a macOS arm64 binary; Linux is built from the
@@ -142,6 +143,20 @@ proof nodes. See [the logic contract](docs/LOGIC.md) and
 [metatheory/root obligations](docs/LOGIC-METATHEORY.md). The accepted derivations
 are relative to this trusted implementation and root theory; generic checker
 soundness, the admission metatheorem, and host preservation remain open.
+
+## Checked metatheory and translation validation
+
+An optional [Rocq/Coq audit](audit/README.md) checks universal soundness and
+preservation results for the scheduler, constructive propositional rules,
+finite-path checking, total construction calculus, stack compiler/validator and
+R05 expression CEK control. Generated certificates check the actual symbolic
+function bodies for every input environment. Run `make bootstrap-audit` and
+`make test-metatheory`; the normal Shen runtime has no Rocq dependency.
+
+Structurally decreasing self calls now allow other typed arguments to change,
+including accumulator reversal with a checked generic length contract. The
+source/model, full first-order, checker/calculus, callee and native host bridges
+remain explicit. These results do not claim a verified Chez compiler.
 
 ## Exact claims and inert artifacts
 

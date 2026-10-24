@@ -20,3 +20,4 @@
 (load "proofs/arithmetic.shen")
 (load "proofs/composition.shen")
 (load "construct/equality.shen")
+(load "runtime/compile.shen")

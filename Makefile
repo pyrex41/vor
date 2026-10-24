@@ -30,3 +30,13 @@ admission-demo:
 .PHONY: test-construction-mutations
 test-construction-mutations:
 	./scripts/test-construction-mutations
+
+.PHONY: bootstrap-audit test-metatheory compiler-demo
+bootstrap-audit:
+	./scripts/bootstrap-audit
+
+test-metatheory:
+	./scripts/test-metatheory
+
+compiler-demo:
+	./scripts/shen -l vor.shen -l examples/admission.shen -e '(vor.compiled-outcome (admission-demo.program) (hd (tl (vor.compile-program (admission-demo.program)))) total.twice [[succ [succ zero]]] 2000)'

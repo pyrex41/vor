@@ -163,3 +163,12 @@ construction evidence `[constructed-theorem 0 Construction Proof]`. The root
 includes the additional initial-algebra and construction rules; it is not the
 unchanged 20-rule R02 root. Generic here describes the quantified application
 claim, not a completed generic soundness proof of the checker implementation.
+
+
+Stack compilation certificates bind subject `[program P]`, domain
+`constructor-stack-0`, judgment `[compiles ExactArtifact]`, and kind
+`concrete-derivation`. Evidence must equal that exact artifact, whose source,
+metadata and every instruction are independently checked against P. Acceptance
+is `[accepted compilation]`, not a native compiler/host-preservation claim.
+The optional universal theorem/translation-validation audit and its residual
+source/callee bridges are documented in audit/README.md.

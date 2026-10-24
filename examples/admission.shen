@@ -15,7 +15,10 @@
         [cons cell [cons H [cons T []]]] -> [cons succ [cons [total.length T] []]]]
        [define total.append nil Y -> Y
         [cons cell [cons H [cons T []]]] Y ->
-          [cons cell [cons H [cons [total.append T Y] []]]]]]]))
+          [cons cell [cons H [cons [total.append T Y] []]]]]
+       [define total.reverse nil Y -> Y
+        [cons cell [cons H [cons T []]]] Y ->
+          [total.reverse T [cons cell [cons H [cons Y []]]]]]]]))
 (define admission-demo.program -> (admission-demo.normalized (vor.normalize (admission-demo.source))))
 (define admission-demo.normalized [ok P] -> P)
 (define admission-demo.contracts
@@ -26,6 +29,9 @@
         [equal natural [v 0] [app total.add [[v 1] [v 1]]]]]
       [contract total.length [nat-list] natural 0 [top]]
       [contract total.append [nat-list nat-list] nat-list 0
+        [equal natural [app total.length [[v 0]]]
+          [app total.add [[app total.length [[v 1]]] [app total.length [[v 2]]]]]]]
+      [contract total.reverse [nat-list nat-list] nat-list 0
         [equal natural [app total.length [[v 0]]]
           [app total.add [[app total.length [[v 1]]] [app total.length [[v 2]]]]]]]])
 (define admission-demo.signature
@@ -93,7 +99,8 @@
       [post total.copy (admission-demo.copy-post)]
       [post total.twice (admission-demo.twice-post)]
       [post total.length [gen [top]]]
-      [post total.append (admission-demo.append-post)]])
+      [post total.append (admission-demo.append-post)]
+      [post total.reverse (admission-demo.reverse-post)]])
 (define admission-demo.evidence
   -> [vor-admission 0 (admission-demo.program) (admission-demo.signature)
        (admission-demo.contracts) (admission-demo.construction) (admission-demo.posts)])
@@ -116,3 +123,27 @@
          (admission-demo.equations) natural
          [equal natural [app total.add [[app total.add [[v 0] [v 1]]] [v 2]]]
            [app total.add [[v 0] [app total.add [[v 1] [v 2]]]]]] 100)]])
+
+(define admission-demo.right-succ
+  -> [forall natural [forall natural
+    [equal natural [app total.add [[v 0] [app succ [[v 1]]]]]
+      [app succ [[app total.add [[v 0] [v 1]]]]]]]])
+(define admission-demo.right-succ-proof
+  -> [gen (vor.prove-induction (admission-demo.signature) [natural]
+    (admission-demo.equations) natural
+    [equal natural [app total.add [[v 0] [app succ [[v 1]]]]]
+      [app succ [[app total.add [[v 0] [v 1]]]]]] 100)])
+(define admission-demo.reverse-motive
+  -> [forall nat-list
+    [equal natural [app total.length [[app total.reverse [[v 1] [v 0]]]]]
+      [app total.add [[app total.length [[v 1]]] [app total.length [[v 0]]]]]]])
+(define admission-demo.reverse-strong
+  -> (vor.prove-induction (admission-demo.signature) []
+       [(admission-demo.right-succ) | (admission-demo.equations)]
+       nat-list (admission-demo.reverse-motive) 100))
+(define admission-demo.reverse-post
+  -> [apply (admission-demo.right-succ)
+       [intro [gen [gen
+         (vor.proof-specialize [forall nat-list (admission-demo.reverse-motive)]
+           [[v 0] [v 1]] (admission-demo.reverse-strong))]]]
+       (admission-demo.right-succ-proof)])

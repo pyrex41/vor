@@ -127,5 +127,11 @@
       Gamma (append (vor.algebra-hypotheses S Lifted Fields 0)
                     (vor.fol-shift-context G (length Fields)))
       Target (vor.fol-sub Lifted [app C (vor.algebra-variables (length Fields) 0)] 0)
-      [[C (vor.prove-equality Sig Gamma Target Fuel)] |
+      [[C (vor.prove-goal Sig (append Fields V) Gamma Target Fuel)] |
         (vor.prove-induction-cases Sig V G S P Fuel Cs)]))
+
+(define vor.prove-goal
+  _ _ _ _ 0 -> [search-failed]
+  Sig V G [forall S P] Fuel ->
+    [gen (vor.prove-goal Sig [S | V] (vor.fol-shift-context G 1) P (- Fuel 1))]
+  Sig V G P Fuel -> (vor.prove-equality Sig G P Fuel))
