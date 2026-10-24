@@ -1,0 +1,21 @@
+From VorAudit Require Import Checker Propositional Runtime Admission Compiler Validation CEK.
+Print Assumptions check_derivation.
+Print Assumptions check_sound.
+Print Assumptions check_remainder.
+Print Assumptions check_budget_extension.
+Print Assumptions Propositional.checker_sound.
+Print Assumptions Propositional.closed_bottom_rejected.
+Print Assumptions Runtime.path_checker_sound.
+Print Assumptions Runtime.path_checker_complete.
+Print Assumptions Runtime.path_outcome_unique.
+Print Assumptions Runtime.runner_receipt_accepted.
+Print Assumptions Admission.earlier_well_founded.
+Print Assumptions Admission.admission_total_correct.
+Print Assumptions Compiler.constructor_field_decreases.
+Print Assumptions Compiler.compilation_preserves_evaluation.
+Print Assumptions Compiler.compiled_total_and_all_outcomes.
+Print Assumptions Validation.validation_exact.
+Print Assumptions Validation.checked_compilation_total_and_all_outcomes.
+Print Assumptions CEK.evaluator_adequacy.
+Print Assumptions CEK.final_result_unique.
+Print Assumptions CEK.adequacy_all_outcomes.

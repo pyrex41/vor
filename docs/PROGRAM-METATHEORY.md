@@ -99,3 +99,16 @@ execution paths, making this useful backpressure on normalization and stepping.
 Witness-mutation, source-tampering, closed-resolution, and process-service tests
 exercise the independent producer/acceptance boundary. Subsequent stages must
 retain these while adding actual generic preservation and contract proofs.
+
+
+## Optional runtime and translation proofs
+
+The audit now proves soundness/completeness of the deterministic finite path
+checker model, runner-receipt acceptance and unique terminal outcomes. It also
+proves big-step/CEK adequacy for R05 expression control, with a fixed pure callee
+interface, and compiler/independent translation-validator preservation for that
+fragment. Generated certificates bind twelve actual symbolic source bodies and
+their compiled instructions, quantifying over every environment/call interpretation.
+This is stronger than sampled native agreement, but does not complete the full
+source/CEK, ordered-clause/guard, callee or host correspondence above. The exact
+interfaces and residuals are recorded in audit/README.md.

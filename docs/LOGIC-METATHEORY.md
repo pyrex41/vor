@@ -137,3 +137,15 @@ the induction rule's preservation cases. It is not the free initial algebra
 and does not validate constructor disjointness/injectivity or encoding theorems.
 These finite families are independent bug-finding evidence, not a universal
 constructive soundness proof or an independent verification of the host.
+
+
+## Optional checked scheduler and quantifier-free metatheory
+
+The source now uses an explicit ordered work list with the same shared node
+budget. audit/rocq/Checker.v proves derivation construction, budget remainder and
+extension, and semantic soundness conditional on local expansion soundness.
+audit/rocq/Propositional.v proves all eleven quantifier-free constructive local
+rules and their checker soundness for arbitrary propositional interpretations.
+These are universal proofs, distinct from the finite reference corpus. The full
+sorted first-order/algebra rules and source/model correspondence remain open;
+see audit/README.md for the exact proven scope and remaining bridge requirements.

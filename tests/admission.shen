@@ -66,13 +66,13 @@
 (test.equal admission-no-nondecreasing-recursion
   (admit-test.recheck (admit-test.mutant [total.copy (admit-test.x)]
     [total.copy [cons succ [cons (admit-test.x) []]]]))
-  [rejected nondecreasing-or-changed-parameters])
+  [rejected nondecreasing-recursion])
 (test.equal admission-no-unrelated-smaller-witness
   (admit-test.recheck (admit-test.mutant [total.copy (admit-test.x)] [total.copy zero]))
-  [rejected nondecreasing-or-changed-parameters])
-(test.equal admission-no-changed-recursive-parameters
-  (admit-test.recheck (admit-test.mutant [total.add (admit-test.x) (admit-test.y)]
-    [total.add (admit-test.x) zero])) [rejected nondecreasing-or-changed-parameters])
+  [rejected nondecreasing-recursion])
+(test.equal admission-changed-parameters-requires-new-generic-proof
+  (hd (admit-test.recheck (admit-test.mutant [total.add (admit-test.x) (admit-test.y)]
+    [total.add (admit-test.x) zero]))) rejected)
 (test.equal admission-no-future-call
   (admit-test.recheck (admit-test.mutant [total.copy (admit-test.x)] [total.twice (admit-test.x)]))
   [rejected unadmitted-call])
@@ -240,10 +240,27 @@
   (let P (admit-test.mutant [total.copy (admit-test.x)] [total.copy [cons succ [cons (admit-test.x) []]]])
     (vor.construct-check P (admission-demo.signature) (admission-demo.contracts)
       (vor.construct P (admission-demo.signature) (admission-demo.contracts))))
-  [rejected nondecreasing-or-changed-parameters])
+  [rejected nondecreasing-recursion])
 (test.equal admission-no-unencoded-tree-field
   (vor.contracts? [fol-signature 1 [] [[wrap-id [wrapper] wrapper]] []
     [[data wrapper [[wrap [vor.tree]]]]]] [[contract wrap-id [wrapper] wrapper 0 [top]]]) false)
 
 (test.equal admission-root-inventory
   (hd (vor.construction-root-inventory)) vor-construction-root)
+
+(test.equal construction-changing-typed-parameters
+  (let P (admit-test.mutant [total.add (admit-test.x) (admit-test.y)] [total.add (admit-test.x) zero])
+    (hd (vor.construct-check P (admission-demo.signature) (admission-demo.contracts)
+      (vor.construct P (admission-demo.signature) (admission-demo.contracts))))) constructed)
+(test.equal generic-accumulator-reversal-admission
+  (admission-demo.check) [accepted total-admission])
+(test.equal accumulator-reversal-exact-ground-value
+  (admit-test.outcome (vor.run-admitted (admission-demo.program) (admission-demo.signature)
+    (admission-demo.contracts) (admission-demo.evidence) total.reverse
+    [[cell zero [cell [succ zero] nil]] [cell [succ [succ zero]] nil]] 2000 2000))
+  [value [cell [succ zero] [cell zero [cell [succ [succ zero]] nil]]]])
+(test.equal generic-addition-right-successor
+  (vor.check-constructed-theorem (admission-demo.program) (admission-demo.signature)
+    (admission-demo.contracts) (admission-demo.construction)
+    (admission-demo.right-succ) (admission-demo.right-succ-proof) 2000)
+  [accepted constructed-theorem])

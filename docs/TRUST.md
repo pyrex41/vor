@@ -11,7 +11,8 @@ executes them. Propositional acceptance additionally trusts `shen/proof.shen`
 and its literal decoder. There is no independently verified machine-code path.
 
 Tests and cross-checks are evidence, not a mechanized soundness theorem. No
-Lean/Rocq proof is currently included. Vör does not claim a smaller trusted base
+Lean/Rocq proof was included in the original foundation. An optional Rocq/Coq
+audit is now included for the specific metatheory described in audit/README.md. Vör does not claim a smaller trusted base
 merely because some source files are short.
 
 Models and proof objects passed to public APIs are inert finite data. Loading
@@ -77,3 +78,15 @@ describes the full loaded root; vor.algebra-root-inventory adds the three algebr
 rules, and kernel/admit.shen defines the separate construction/admission rules.
 Generic application proofs are available relative to that root; the root's own
 generic soundness/termination, R03 adequacy and host preservation remain open.
+
+
+The work-list scheduler, expanded structurally decreasing call rule (construction
+root v2), stack translation validator and qualification executor are additional
+reviewed Shen code. The optional audit supplies twenty named assumption-free
+model/calculus theorem checks and per-body universal preservation certificates;
+"assumption-free" here excludes global postulates, not explicit theorem parameters.
+Source/model, full first-order rule, checker/calculus, callee and host bridges
+remain visible in audit/README.md. The source hash manifest is a drift detector,
+not a proof of these bridges. No Chez compiler implementation was changed or
+removed from the trusted base. The qualification executor's compiled-value tag
+is not accepted as theorem evidence by any Vör claim route.

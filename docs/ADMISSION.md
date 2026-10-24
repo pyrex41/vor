@@ -61,11 +61,14 @@ The exact source and every clause are checked, including unused functions.
 
 An ordinary call must target an **earlier** constructed function. Self calls must
 use an immediate self-sort field of this clause's selected constructor as the
-measure argument, and must preserve the other input terms exactly. This proves
-strict structural decrease. Functions may combine several decreasing calls;
-nondecreasing calls, fabricated smaller inputs, changed parameters, forward calls
-and mutual recursion are rejected. The unchanged-parameter restriction is a
-current fragment limitation, not a claim that other terminating programs diverge.
+measure argument. Other arguments may change, provided every argument still
+has its declared type. Definition rank followed by measured-value size is a
+well-founded order, even when other arguments grow. Functions may combine several decreasing calls;
+nondecreasing calls, fabricated smaller inputs, ill-typed changed parameters,
+forward calls and mutual recursion are rejected. Root inventory version 2 records
+this broader call rule. The optional audit proves well-foundedness and the
+construction-calculus total-correctness theorem; the checker-to-calculus bridge
+remains an explicit obligation.
 R03 if, general guards, primitives such as hd/tl/equality, higher-order functions,
 effects and general recursion are outside this initial construction fragment.
 
@@ -120,10 +123,13 @@ interning; process tests independently construct valid and hostile fixtures.
 ## Demonstrations and remaining theorem obligations
 
 `examples/admission.shen` defines addition, recursive identity, a composition,
-length and append **once** as inert ordinary Shen definitions. Checked contracts
+length, append and accumulator reversal **once** as inert ordinary Shen definitions. Checked contracts
 include add(X,Y)=X when Y=zero, copy(X)=X, twice(X)=add(X,X), total natural-valued
 length, and length(append(X,Y))=add(length(X),length(Y)). Additional checked generic
-lemmas prove addition associativity and append(X,nil)=X. None enumerates inputs.
+lemmas prove addition associativity, its right-successor law and append(X,nil)=X.
+Accumulator reversal checks length(reverse(X,Acc))=add(length(X),length(Acc));
+its induction hypothesis quantifies over arbitrary accumulators, including the
+changed recursive argument. None enumerates inputs.
 The append contract is the stated length law; it does not alone specify element
 order. The separate right-identity lemma also does not claim full list equivalence.
 
@@ -147,3 +153,10 @@ proof discharges those implementation-wide statements; the roadmap registry
 retains its open obligations. The next application stage is R06's exact transfer
 contract; it must provide its own conservation, debit/credit, frame and authority
 proofs rather than treating these arithmetic/list lemmas as a transfer proof.
+
+
+The optional [metatheory audit](../audit/README.md) now checks universal scheduler,
+constructive-rule, path, construction-calculus, compiler, translation-validation
+and CEK theorems. These are actual kernel-checked results for their named models.
+Their explicit interfaces and remaining source/first-order/callee bridges are
+listed there; this does not silently discharge every numbered obligation above.

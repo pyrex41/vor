@@ -1,0 +1,135 @@
+{
+  "format": 1,
+  "tool": "Coq (Rocq predecessor)",
+  "version": "8.18.0",
+  "ocaml": "4.14.1",
+  "platform": "Linux-x86_64-Ubuntu-24.04-compatible",
+  "packages": [
+    {
+      "file": "coq_8.18.0+dfsg-1build2_amd64.deb",
+      "package": "coq",
+      "version": "8.18.0+dfsg-1build2",
+      "sha256": "22897a17a75d8930276f5eedd5cd29ac940f1ab4d4661b6a49ccc63577e54d3b",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20260828T000000Z/pool/universe/c/coq/coq_8.18.0+dfsg-1build2_amd64.deb"
+    },
+    {
+      "file": "libcompiler-libs-ocaml-dev_4.14.1-1ubuntu1_amd64.deb",
+      "package": "libcompiler-libs-ocaml-dev",
+      "version": "4.14.1-1ubuntu1",
+      "sha256": "8d166ae82cec28e6f20f175574cccb91f931b0add4cb1e4380c53d7999b415dd",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20260828T000000Z/pool/universe/o/ocaml/libcompiler-libs-ocaml-dev_4.14.1-1ubuntu1_amd64.deb"
+    },
+    {
+      "file": "libcoq-core-ocaml_8.18.0+dfsg-1build2_amd64.deb",
+      "package": "libcoq-core-ocaml",
+      "version": "8.18.0+dfsg-1build2",
+      "sha256": "027c8fb39db20de4910f8a75e0b9a32c0fbc27c6f532375ed7604757f71c12a9",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20260828T000000Z/pool/universe/c/coq/libcoq-core-ocaml_8.18.0+dfsg-1build2_amd64.deb"
+    },
+    {
+      "file": "libcoq-stdlib_8.18.0+dfsg-1build2_amd64.deb",
+      "package": "libcoq-stdlib",
+      "version": "8.18.0+dfsg-1build2",
+      "sha256": "af139bb3af8c71b5e991944a61eef5bba28038a715f71146fa046241bb614b23",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20260828T000000Z/pool/universe/c/coq/libcoq-stdlib_8.18.0+dfsg-1build2_amd64.deb"
+    },
+    {
+      "file": "libfindlib-ocaml_1.9.6-1build4_amd64.deb",
+      "package": "libfindlib-ocaml",
+      "version": "1.9.6-1build4",
+      "sha256": "c22df5a71fc8c59ddcf5d3dd0d9f07eecb07440f7bb41f0681e4727dc1b76640",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20260828T000000Z/pool/universe/f/findlib/libfindlib-ocaml_1.9.6-1build4_amd64.deb"
+    },
+    {
+      "file": "libncurses-dev_6.4+20240113-1ubuntu2.1_amd64.deb",
+      "package": "libncurses-dev",
+      "version": "6.4+20240113-1ubuntu2.1",
+      "sha256": "3b245ee458a256f231ccc76741ddf795c5a9c58f37d412c9586561c79ad153ad",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20260828T000000Z/pool/main/n/ncurses/libncurses-dev_6.4+20240113-1ubuntu2.1_amd64.deb"
+    },
+    {
+      "file": "libncurses6_6.4+20240113-1ubuntu2.1_amd64.deb",
+      "package": "libncurses6",
+      "version": "6.4+20240113-1ubuntu2.1",
+      "sha256": "c4d0fd9d7c997f4b13dbfdd9b9a5e14ed0222303ac931f9c2594c6b99696b63d",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20260828T000000Z/pool/main/n/ncurses/libncurses6_6.4+20240113-1ubuntu2.1_amd64.deb"
+    },
+    {
+      "file": "libncursesw6_6.4+20240113-1ubuntu2.1_amd64.deb",
+      "package": "libncursesw6",
+      "version": "6.4+20240113-1ubuntu2.1",
+      "sha256": "bc860e63d1f8e653b1d14695ed5e3e8baf88b14c38ba0e6a93c67809a7c116a6",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20260828T000000Z/pool/main/n/ncurses/libncursesw6_6.4+20240113-1ubuntu2.1_amd64.deb"
+    },
+    {
+      "file": "libstdlib-ocaml-dev_4.14.1-1ubuntu1_amd64.deb",
+      "package": "libstdlib-ocaml-dev",
+      "version": "4.14.1-1ubuntu1",
+      "sha256": "14f54d8fc3d643d3c92cecb61e10ca04cea5f81775adfdb62cba752bed563d06",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20260828T000000Z/pool/universe/o/ocaml/libstdlib-ocaml-dev_4.14.1-1ubuntu1_amd64.deb"
+    },
+    {
+      "file": "libstdlib-ocaml_4.14.1-1ubuntu1_amd64.deb",
+      "package": "libstdlib-ocaml",
+      "version": "4.14.1-1ubuntu1",
+      "sha256": "0cfd085866f8b215b22bb47c5da9ff9a04fddb25b75e131ba76542d8e3027287",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20260828T000000Z/pool/universe/o/ocaml/libstdlib-ocaml_4.14.1-1ubuntu1_amd64.deb"
+    },
+    {
+      "file": "libtinfo6_6.4+20240113-1ubuntu2.1_amd64.deb",
+      "package": "libtinfo6",
+      "version": "6.4+20240113-1ubuntu2.1",
+      "sha256": "768e43c268e1e49b8dae7a50ed4778d6db88688abf72fdf779641e124c8a9a0b",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20260828T000000Z/pool/main/n/ncurses/libtinfo6_6.4+20240113-1ubuntu2.1_amd64.deb"
+    },
+    {
+      "file": "libzarith-ocaml_1.13-2build4_amd64.deb",
+      "package": "libzarith-ocaml",
+      "version": "1.13-2build4",
+      "sha256": "b7319d0b5567916991fd2d76ad6e07eb41cba377f66c4979f5fbefbd90153861",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20260828T000000Z/pool/universe/o/ocaml-zarith/libzarith-ocaml_1.13-2build4_amd64.deb"
+    },
+    {
+      "file": "ncurses-base_6.4+20240113-1ubuntu2.1_all.deb",
+      "package": "ncurses-base",
+      "version": "6.4+20240113-1ubuntu2.1",
+      "sha256": "de4456b2a2de1508bfc8e9c202ab4430aac586fe5244277622cc354afc2b6f1e",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20260828T000000Z/pool/main/n/ncurses/ncurses-base_6.4+20240113-1ubuntu2.1_all.deb"
+    },
+    {
+      "file": "ncurses-bin_6.4+20240113-1ubuntu2.1_amd64.deb",
+      "package": "ncurses-bin",
+      "version": "6.4+20240113-1ubuntu2.1",
+      "sha256": "3d6bc801c371154d023f096cc073d8638ea72a050d09cae689bfeebabf7bafdc",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20260828T000000Z/pool/main/n/ncurses/ncurses-bin_6.4+20240113-1ubuntu2.1_amd64.deb"
+    },
+    {
+      "file": "ocaml-base_4.14.1-1ubuntu1_amd64.deb",
+      "package": "ocaml-base",
+      "version": "4.14.1-1ubuntu1",
+      "sha256": "58efc8df3c84db7ca31a7b5312a60ec416ed417953882c0cbe108f69d1dd35d7",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20260828T000000Z/pool/universe/o/ocaml/ocaml-base_4.14.1-1ubuntu1_amd64.deb"
+    },
+    {
+      "file": "ocaml-findlib_1.9.6-1build4_amd64.deb",
+      "package": "ocaml-findlib",
+      "version": "1.9.6-1build4",
+      "sha256": "558065a8d99b61841471bb622784d01badeaadc85e91cf50d71aa88efff63888",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20260828T000000Z/pool/universe/f/findlib/ocaml-findlib_1.9.6-1build4_amd64.deb"
+    },
+    {
+      "file": "ocaml-interp_4.14.1-1ubuntu1_amd64.deb",
+      "package": "ocaml-interp",
+      "version": "4.14.1-1ubuntu1",
+      "sha256": "3d7cdd56b28b26cfe6240d67dffecce84ecc7aed3448ccde4665f47678bbc315",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20260828T000000Z/pool/universe/o/ocaml/ocaml-interp_4.14.1-1ubuntu1_amd64.deb"
+    },
+    {
+      "file": "ocaml_4.14.1-1ubuntu1_amd64.deb",
+      "package": "ocaml",
+      "version": "4.14.1-1ubuntu1",
+      "sha256": "8f15e32a7fa98461a6d15e71643131d2e04cc62ee8c49435d43496f2590bf275",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20260828T000000Z/pool/universe/o/ocaml/ocaml_4.14.1-1ubuntu1_amd64.deb"
+    }
+  ]
+}

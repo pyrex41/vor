@@ -35,6 +35,8 @@
     (vor.check-evaluation P Name Args Outcome E Fuel)
   [vor-claim 0 _ [source Source] _ _ admitted-shen-0 [normalizes P] concrete-derivation] E _ ->
     (vor.check-normalization Source E)
+  [vor-claim 0 _ [program P] _ _ constructor-stack-0 [compiles Artifact] concrete-derivation] E _ ->
+    (if (= E Artifact) (vor.check-compilation P Artifact) [rejected compilation-evidence-mismatch])
   [vor-claim 0 _ [total-program P Sig Cs] _ _ total-shen-1 [total-contracts] generic-proof] E Fuel ->
     (vor.admit P Sig Cs E Fuel)
   [vor-claim 0 _ [total-program P Sig Cs] _ _ total-shen-1 [theorem T] generic-proof]
@@ -51,6 +53,7 @@
   C [accepted first-order-derivation] -> [checked C [accepted first-order-derivation]]
   C [accepted evaluation] -> [checked C [accepted evaluation]]
   C [accepted normalization] -> [checked C [accepted normalization]]
+  C [accepted compilation] -> [checked C [accepted compilation]]
   C [accepted total-admission] -> [checked C [accepted total-admission]]
   C [accepted constructed-theorem] -> [checked C [accepted constructed-theorem]]
   _ R -> R)

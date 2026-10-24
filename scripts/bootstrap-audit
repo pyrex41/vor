@@ -1,0 +1,32 @@
+#!/usr/bin/env python3
+"""Optional hash-pinned local Coq audit tools; no system package installation."""
+import hashlib
+import json
+from pathlib import Path
+import platform
+import subprocess
+import urllib.request
+ROOT = Path(__file__).resolve().parent.parent
+if (platform.system(), platform.machine()) != ("Linux", "x86_64"):
+    raise SystemExit("Local binary bootstrap supports Linux x86_64 only; configure COQC/COQCHK 8.18.0 on other systems.")
+lock = json.loads((ROOT / "audit/toolchain.lock.json").read_text())
+cache, dest = ROOT / ".tools/rocq-debs", ROOT / ".tools/rocq-root"
+cache.mkdir(parents=True, exist_ok=True)
+dest.mkdir(parents=True, exist_ok=True)
+def digest(path):
+    h = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024*1024), b""): h.update(chunk)
+    return h.hexdigest()
+for package in lock["packages"]:
+    target = cache / package["file"]
+    if not target.exists() or digest(target) != package["sha256"]:
+        partial = target.with_suffix(".download")
+        with urllib.request.urlopen(package["url"], timeout=60) as source, partial.open("wb") as output:
+            while chunk := source.read(1024*1024): output.write(chunk)
+        if digest(partial) != package["sha256"]:
+            partial.unlink()
+            raise SystemExit("Audit tool archive digest mismatch: " + package["package"])
+        partial.replace(target)
+    subprocess.run(["dpkg-deb", "-x", str(target), str(dest)], check=True)
+print("Optional Coq 8.18.0 audit toolchain ready (18 checksum-pinned packages).")
