@@ -134,3 +134,25 @@ These are fresh runtime/conformance results. The historical upstream 134-test
 receipt above has not been rerun as a current-host kernel qualification. No
 mathematical obligation, compiler correctness claim, application integration,
 or implementation refinement gate is promoted by this runtime change.
+
+## Combined R01/R02 and shared runtime: 2026-10-24
+
+The integrated tree combines the claim/artifact and first-order kernel changes
+with the shared `v0.52-pyrex41.5` runtime. On macOS arm64, the checksum-pinned
+archive and exact PR #117 overlay passed:
+
+- `make test`: **74,130 checks passed**.
+- `make test-kernel`: **134 passed, 0 failed**, using the pinned upstream test
+  checkout and the same shared runtime/overlay.
+- `make demo boundary-demo logic-demo plan`: passed, retaining all generic
+  proof obligations as open.
+- Whitespace and shell syntax checks passed.
+
+The integration preserves the explicit kernel 43.1 guard and the Chez/helper
+checks. The upstream-test launcher now reads the platform-specific host-path
+cache used by bootstrap. Earlier sections remain historical at their stated
+hosts; this does not retroactively refresh their evidence. The exact-head hosted
+checks for the integration are separate from this local receipt. Independent
+review found no concrete first-order scope/fuel defect, while retaining the
+documented operational limits around symbol interning and physical resources.
+This is no claim of generic soundness, application admission or refinement.
