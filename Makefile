@@ -1,4 +1,4 @@
-.PHONY: bootstrap test demo plan boundary-demo test-kernel logic-demo test-service
+.PHONY: bootstrap test demo plan boundary-demo test-kernel logic-demo test-service program-demo
 bootstrap:
 	./scripts/bootstrap
 test:
@@ -19,3 +19,6 @@ logic-demo:
 
 test-service:
 	python3 -m unittest discover -s tests -p test_service.py -v
+
+program-demo:
+	./scripts/shen -l vor.shen -l examples/program.shen -e '(program-demo.run)'

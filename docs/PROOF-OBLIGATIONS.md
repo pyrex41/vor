@@ -86,3 +86,17 @@ judgment correspondence obligations are stated in LOGIC-METATHEORY.md. They map
 to the existing R02 root/formation/corpus goals, R04 induction/substitution work,
 and R16 checker soundness/totality/correspondence. The registry still records
 57 required goals; a new implementation does not automatically discharge them.
+
+
+## R03 syntax and executable relation (universal discharge remains open)
+
+Closed source normalization, ordered patterns/guards, lexical binding, saturated
+call resolution, explicit outcomes, small-step execution, normalization receipts,
+and exact evaluation-witness checking are implemented. Finite native differential
+checks and hostile witness tests provide engineering evidence.
+
+PROGRAM-METATHEORY.md specifies normalization preservation, scope/closure and step
+preservation, determinism, producer/acceptance adequacy, indexed correspondence,
+and remaining host assumptions. These map to the existing R03 normalization,
+evaluation, and determinism goals and R16 correspondence work. No registry
+obligation is converted from open to proved by implementing or testing a checker.

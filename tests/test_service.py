@@ -202,5 +202,47 @@ class SemanticProcessTests(unittest.TestCase):
                 self.run_case(enc(value),status,str(path))
 
 
+    def test_closed_program_evaluation_witness(self):
+        s = sym
+        name = s("r03.service")
+        source = [s("shen-source"), 0, [[s("define"), name, s("->"), s("good")]]]
+        body = [s("literal"), s("good")]
+        clauses = [[s("clause"), [], [s("literal"), True], body]]
+        program = [s("vor-program"), 0, source, [[s("function"), name, 0, clauses]]]
+        root = [s("vor-root"), 0, "reviewed-r03", "shared-43.1-pr117"]
+        outcome = [s("value"), s("good")]
+        claim = [s("vor-claim"), 0, root, [s("program"), program], [], [],
+                 s("admitted-shen-0"), [s("evaluates"), name, [], outcome], s("concrete-derivation")]
+        frame = [[s("guard"), name, body, [], [], []]]
+        states = [
+            [s("machine"), [s("call"), name, []], []],
+            [s("machine"), [s("choose"), name, clauses, []], []],
+            [s("machine"), [s("eval"), [s("literal"), True], []], frame],
+            [s("machine"), [s("return"), True], frame],
+            [s("machine"), [s("eval"), body, []], []],
+            [s("machine"), [s("return"), s("good")], []],
+        ]
+        witness = [s("vor-evaluation"), 0, program, name, [], outcome, states]
+        envelope = [s("vor-evidence"), 0, claim, witness]
+        config = """(define vor.service.root -> [vor-root 0 "reviewed-r03" "shared-43.1-pr117"])
+(define vor.service.program -> (hd (tl (vor.normalize [shen-source 0 [[define r03.service -> good]]]))))
+(define vor.service.expected -> [vor-claim 0 (vor.service.root) [program (vor.service.program)] [] [] admitted-shen-0 [evaluates r03.service [] [value good]] concrete-derivation])
+(define vor.service.symbols -> [vor-root vor-claim vor-evidence vor-program shen-source define -> good function clause literal program admitted-shen-0 evaluates value concrete-derivation vor-evaluation r03.service machine call choose eval guard return])
+(define vor.service.byte-limit -> 8192)
+(define vor.service.depth-limit -> 64)
+(define vor.service.node-limit -> 10000)
+(define vor.service.proof-limit -> BUDGET)
+"""
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "evaluation.shen"
+            path.write_text(config.replace("BUDGET", "100"))
+            self.run_case(enc(envelope), 0, str(path))
+            tampered = copy.deepcopy(envelope)
+            del tampered[3][6][1]
+            self.run_case(enc(tampered), 1, str(path))
+            path.write_text(config.replace("BUDGET", "1"))
+            self.run_case(enc(envelope), 2, str(path))
+
+
 if __name__ == "__main__":
     unittest.main()

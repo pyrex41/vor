@@ -53,3 +53,13 @@ names, never host callbacks. The System S first-order judgment delegates to the
 same kernel. The root is explicitly stronger than the original propositional
 fragment; artifact/label equality alone does not attest a running root version.
 See LOGIC-METATHEORY.md for residual semantic and encoding premises.
+
+
+R03 additionally trusts the syntax/closure normalizer in spec/program.shen,
+the small-step relation in spec/evaluation.shen, and the runner/witness checker
+in runtime/reference.shen. Program names resolve in frozen definitions; this
+is not protection against rebinding trusted checker/primitive implementations
+or a proof of complete native dependency closure. Selected host value operations
+remain trusted. Native eval-kl is used only by controlled test fixtures, never
+by admission, reference evaluation, or artifact acceptance. PROGRAM-METATHEORY.md
+states the still-open generic preservation, determinism, and adequacy claims.

@@ -30,7 +30,11 @@
   [vor-claim 0 _ logic _ _ intuitionistic-propositions [derives G P] concrete-derivation] E D ->
     (vor.proof G P E D)
   [vor-claim 0 _ [first-order Sig Vars] _ _ constructive-first-order [derives G P] concrete-derivation] E Fuel ->
-    (vor.fol-check Sig Vars G P E Fuel))
+    (vor.fol-check Sig Vars G P E Fuel)
+  [vor-claim 0 _ [program P] _ _ admitted-shen-0 [evaluates Name Args Outcome] concrete-derivation] E Fuel ->
+    (vor.check-evaluation P Name Args Outcome E Fuel)
+  [vor-claim 0 _ [source Source] _ _ admitted-shen-0 [normalizes P] concrete-derivation] E _ ->
+    (vor.check-normalization Source E))
 
 \\ Preserve the ENTIRE expected claim on success; not a reusable safe flag.
 \\ A supplied accepted record is never routed around the semantic checkers.
@@ -39,6 +43,8 @@
   C [accepted trace-prefix N] -> [checked C [accepted trace-prefix N]]
   C [accepted derivation] -> [checked C [accepted derivation]]
   C [accepted first-order-derivation] -> [checked C [accepted first-order-derivation]]
+  C [accepted evaluation] -> [checked C [accepted evaluation]]
+  C [accepted normalization] -> [checked C [accepted normalization]]
   _ R -> R)
 
 \\ System S receives literal cons syntax. Decode only the closed data grammar;

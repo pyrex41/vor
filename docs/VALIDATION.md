@@ -156,3 +156,50 @@ checks for the integration are separate from this local receipt. Independent
 review found no concrete first-order scope/fuel defect, while retaining the
 documented operational limits around symbol interning and physical resources.
 This is no claim of generic soundness, application admission or refinement.
+
+## R03 closed execution on the shared runtime
+
+Base: integrated main at `16b5b5580f19ff76180621acac50ea6581f64edc`.
+Runtime: checksum-pinned `pyrex41/shen-scheme v0.52-pyrex41.5` source archive,
+ShenOSKernel 43.1, and the exact PR #117 overlay from toolchain.lock.json.
+The Linux x86_64 source build used `TAR_OPTIONS=--no-same-owner` because this
+workspace cannot restore the archive's original uid/gid; source and archive
+identities were unchanged. No runtime source patch or old-host substitution
+was used. The integrated pre-R03 suite reproduced **74,145 passing checks**.
+
+- `make test`: **75,081 checks passed**, retaining all prior suites. The R03
+  additions cover normalization/closure, repeated patterns, guarded priority,
+  lexical scope, recursive/mutually recursive calls, modeled errors, strictness,
+  host-name rebinding, proof identity, transition tampering, typed/byte claims,
+  and evaluation-fuel uncertainty.
+- The bounded native expression grammar produces 395 cases, each compared
+  against native eval-kl and followed by witness rechecking. Compiled native
+  fixtures independently cover the supported pattern/guard/protect behavior.
+  Test-only native evaluation is unreachable from artifact acceptance.
+- `make program-demo`: the one inert append definition returned `[a b c d]`
+  and its concrete witness checked. The demo does not supply a second native
+  application implementation or a generic all-input contract.
+- `make test-kernel`: **134 upstream assertions passed, 0 failed**, on this
+  shared runtime and overlay.
+- `make test-service`: **14 tests passed**. The new semantic-process case checks
+  a closed-program evaluation witness, rejects its skipped transition, and
+  preserves unknown when checking fuel is exhausted.
+- Five isolated source mutants were detected by copies of the test suite:
+
+| Mutation | Observed regression |
+| --- | --- |
+| Reverse normalized primitive arguments | cons returned an improper wrong-value result |
+| Omit the new let scope | a bound variable was rejected as unbound |
+| Remove repeated-pattern equality | unequal arguments matched the same-variable clause |
+| Ignore witness-edge equality | a skipped transition was incorrectly accepted |
+| Skip normalization recomputation | a modified normalized body retained acceptance |
+
+Shell syntax, Python test syntax, and `git diff --check` passed. The only
+`eval-kl` occurrences in the three acceptance modules are inert reserved-name
+entries; no host evaluation or source loading is invoked there.
+
+These are concrete derivations and bounded engineering evidence. All generic
+normalization preservation, formation/step preservation, determinism, evaluator
+adequacy, totality, and native/compiler correspondence obligations remain open
+as specified in PROGRAM-METATHEORY.md. Frozen application names do not establish
+complete trusted runtime dependency closure or concurrent root-rebinding safety.

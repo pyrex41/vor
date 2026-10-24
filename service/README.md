@@ -42,3 +42,11 @@ R01/R13 prerequisite and does not discharge implementation refinement.
 `make test-service` runs positive and hostile semantic cases plus framing,
 worker-output, failed-exit, and deadline cases. No production Rust peer or
 second semantic checker is required.
+
+
+The semantic corpus also exercises R03 closed-program evaluation witnesses.
+The exact program, input, and outcome remain selected by trusted startup policy;
+requests do not choose executable source to load. A checked evaluation of a
+modeled error is a successful evidence check, not proof that an application
+contract succeeded. The wire alphabet and proper-list/u16/ASCII limits are
+unchanged; broader library values need an explicitly extended codec.
