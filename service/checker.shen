@@ -73,4 +73,3 @@
   _ -> (simple-error "service request"))
 
 (vor.service-main (value *argv*))
-
