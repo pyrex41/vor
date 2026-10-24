@@ -38,3 +38,11 @@ explicit in LOGIC-METATHEORY.md. The next implementation dependency is R03:
 closed admitted Shen syntax, ordered clause/evaluation semantics, and a reference
 evaluator. First-order derivations can express quantified logical theorems;
 application correctness still needs that execution meaning and R04/R05 proofs.
+
+
+R03 now has closed reader-level source normalization, explicit pure small-step
+semantics, reference execution, indexed ground evaluation evidence, exact claim
+binding, and a process-service regression. Its finite native agreement and
+witness checks do not complete the generic preservation/adequacy theorems.
+Next are R04's admitted inductive data/exact arithmetic principles and the
+R05 contracts/termination machinery needed to prove constructors for all inputs.

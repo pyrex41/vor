@@ -29,6 +29,7 @@ make test-kernel
 make demo
 make boundary-demo
 make logic-demo
+make program-demo
 ```
 
 The published release includes a macOS arm64 binary; Linux is built from the
@@ -98,6 +99,21 @@ their assumptions and endpoints; a bare Boolean or a forged `accepted` record
 is not evidence. The inference rules and the bounded explicit proof checker
 are in `shen/proof.shen`. Annotated elimination rules decode literal syntax and
 delegate to that checker; these are not independent proof kernels.
+
+## Closed Shen execution and witnesses
+
+R03 adds a pure first-order Shen subset with ordered clauses, repeated patterns,
+guards, lexical let/if, saturated closed calls, and selected primitives.
+`vor.normalize` freezes source and definitions; `vor.run` executes those exact
+definitions and returns a finite machine-path witness. `vor.check-evaluation`
+rechecks every transition and exact outcome, also through indexed types and
+claim envelopes.
+
+`make program-demo` evaluates the single recursive append definition and checks
+its witness. See [the admitted syntax and semantics](docs/PROGRAM.md) and
+[remaining adequacy/preservation obligations](docs/PROGRAM-METATHEORY.md).
+This is concrete execution evidence, not generic all-input correctness or
+termination admission. Effects and higher-order forms remain unsupported.
 
 ## First-order proof kernel
 

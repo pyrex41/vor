@@ -52,6 +52,10 @@
     (and (vor.context? G) (vor.formula? P))
   [first-order Sig Vars] constructive-first-order [derives G P] concrete-derivation ->
     (vor.fol-sequent? Sig Vars G P)
+  [program P] admitted-shen-0 [evaluates Name Args Outcome] concrete-derivation ->
+    (and (vor.program-call? P Name Args) (vor.program-outcome? Outcome))
+  [source Source] admitted-shen-0 [normalizes P] concrete-derivation ->
+    (= (vor.normalize Source) [ok P])
   _ _ _ _ -> false)
 
 (define vor.claim-root

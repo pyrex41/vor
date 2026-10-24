@@ -173,6 +173,8 @@
 (load "tests/claim-binding.shen")
 (load "tests/artifact.shen")
 (load "tests/artifact-known.shen")
+(load "tests/program.shen")
+(load "tests/program-native.shen")
 (load "tests/assumption-boundaries.shen")
 (load "tests/first-order.shen")
 (load "tests/first-order-reference.shen")

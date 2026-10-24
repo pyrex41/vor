@@ -141,3 +141,15 @@ These tests are engineering evidence. They do not discharge:
 
 The fixed datatype rule and new executable side conditions enter the trusted
 source inventory. No artifact may introduce rules to justify itself.
+
+
+## R03 normalization and execution claims
+
+Subject `[program P]`, domain `admitted-shen-0`, judgment
+`[evaluates Name Args Outcome]`, kind `concrete-derivation` checks an exact
+finite evaluation witness. Subject `[source Source]` with judgment
+`[normalizes P]` checks the exact normalization certificate. The program binds
+its original source and normalized definitions; code, inputs, and outcome may
+not be substituted. Checker fuel uncertainty remains unknown through the typed
+wrapper and process service. A checked modeled error is an evaluation fact,
+not application-contract success. See PROGRAM.md for all limits.
