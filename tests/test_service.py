@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Independent transport corpus; it never decides VOR semantic validity."""
-import copy, importlib.util, io, os, struct, subprocess, sys, tempfile, time, unittest
+import copy, importlib.util, io, os, struct, subprocess, sys, tempfile, threading, time, unittest
 from pathlib import Path
 
 ROOT = os.path.dirname(os.path.dirname(__file__))
@@ -64,6 +64,30 @@ class TransportTests(unittest.TestCase):
                 finally:
                     os.close(reader)
                     os.close(writer)
+
+    def test_fragmented_request_and_reply(self):
+        reader, writer = os.pipe()
+        body = bytes([17, 0])
+        raw = struct.pack(">I", len(body)) + body
+
+        def send():
+            try:
+                for byte in raw:
+                    os.write(writer, bytes([byte]))
+                    time.sleep(.01)
+            finally:
+                os.close(writer)
+
+        sender = threading.Thread(target=send)
+        sender.start()
+        try:
+            self.assertEqual(launcher.read_request_timed(reader, 1), body)
+        finally:
+            sender.join(timeout=1)
+            os.close(reader)
+        self.assertFalse(sender.is_alive())
+        code = "import os,time; [(os.write(1,bytes([b])),time.sleep(.01)) for b in [86,1,17,0]]"
+        self.assertEqual(self.worker(code)[0], bytes([86, 1, 17, 0]))
 
     def test_exact_reply(self):
         self.assertEqual(self.worker("import os; os.write(1, bytes([86,1,17,0]))")[0], bytes([86,1,17,0]))
