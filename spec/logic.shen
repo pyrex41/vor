@@ -2,9 +2,15 @@
 \\ The fixed vor.tree algebra has ONLY vor.leaf and vor.node constructors.
 (tc -)
 
-(define vor.fol-sorts [fol-signature 0 Sorts _ _] -> [vor.tree | Sorts])
-(define vor.fol-functions [fol-signature 0 _ Functions _] -> Functions)
-(define vor.fol-predicates [fol-signature 0 _ _ Predicates] -> Predicates)
+(define vor.fol-sorts
+  [fol-signature 1 Sorts _ _ Data] -> [vor.tree | (append Sorts (vor.algebra-sort-names Data))]
+  [fol-signature 0 Sorts _ _] -> [vor.tree | Sorts])
+(define vor.fol-functions
+  [fol-signature 1 _ Functions _ Data] -> (append Functions (vor.algebra-functions Data))
+  [fol-signature 0 _ Functions _] -> Functions)
+(define vor.fol-predicates
+  [fol-signature 1 _ _ Predicates _] -> Predicates
+  [fol-signature 0 _ _ Predicates] -> Predicates)
 (define vor.fol-sort-list?
   _ [] -> true
   Sorts [S | Rest] -> (and (vor.member? S Sorts) (vor.fol-sort-list? Sorts Rest))
@@ -31,6 +37,10 @@
       (and (vor.fol-sort-list? Sorts Args) (vor.fol-predicates? Sorts Rest)))
   _ _ -> false)
 (define vor.fol-signature?
+  [fol-signature 1 Sorts Functions Predicates Data] ->
+    (and (vor.algebra-declarations? Sorts Data)
+      (vor.fol-signature? [fol-signature 0 (append Sorts (vor.algebra-sort-names Data))
+        (append Functions (vor.algebra-functions Data)) Predicates]))
   [fol-signature 0 Sorts Functions Predicates] ->
     (and (vor.names? Sorts)
       (and (vor.unique? Sorts)

@@ -244,5 +244,80 @@ class SemanticProcessTests(unittest.TestCase):
             self.run_case(enc(envelope), 2, str(path))
 
 
+    def test_generic_total_admission(self):
+        # Independent fixture: no Shen proof producer is trusted by this test.
+        import json
+        s = sym
+        v = lambda n: [s("v"), n]
+        app = lambda c, xs: [s("app"), s(c), xs]
+        eq = lambda a, b: [s("equal"), s("natural"), a, b]
+        name = s("service.identity")
+        source = [s("shen-source"), 0, [[s("define"), name,
+            s("zero"), s("->"), s("zero"),
+            [s("cons"), s("succ"), [s("cons"), s("X"), []]], s("->"),
+            [s("cons"), s("succ"), [s("cons"), s("X"), []]]]]]
+        lit = lambda x: [s("literal"), x]
+        body = [s("primitive"), s("cons"), [lit(s("succ")),
+            [s("primitive"), s("cons"), [[s("local"), 0], lit([])]]]]
+        pattern = [s("pcons"), lit(s("succ")), [s("pcons"), [s("pvar"), 0], lit([])]]
+        program = [s("vor-program"), 0, source, [[s("function"), name, 1, [
+            [s("clause"), [lit(s("zero"))], lit(True), lit(s("zero"))],
+            [s("clause"), [pattern], lit(True), body]]]]]
+        data = [[s("data"), s("natural"), [[s("zero"), []], [s("succ"), [s("natural")]]]]]
+        signature = [s("fol-signature"), 1, [], [[name, [s("natural")], s("natural")]], [], data]
+        contracts = [[s("contract"), name, [s("natural")], s("natural"), 0, eq(v(0), v(1))]]
+        construction = [[s("definition"), name, [
+            [s("case"), s("zero"), [s("constructor"), s("zero"), []]],
+            [s("case"), s("succ"), [s("constructor"), s("succ"), [[s("local")]]]]]]]
+        step_body = eq(app("service.identity", [app("succ", [v(0)])]), app("succ", [v(0)]))
+        proof = [s("data-induct"), [
+            [s("zero"), [s("hyp"), 0]],
+            [s("succ"), [s("inst"), s("natural"), step_body, v(0), [s("hyp"), 2]]]]]
+        evidence = [s("vor-admission"), 0, program, signature, contracts, construction,
+                    [[s("post"), name, proof]]]
+        root = [s("vor-root"), 0, "reviewed-r045", "shared-43.1-pr117"]
+        claim = [s("vor-claim"), 0, root, [s("total-program"), program, signature, contracts],
+                 [], [], s("total-shen-1"), [s("total-contracts")], s("generic-proof")]
+        envelope = [s("vor-evidence"), 0, claim, evidence]
+
+        def shen(x):
+            if isinstance(x, tuple):
+                return "(intern " + json.dumps(x[1]) + ")" if x[1][:1].isupper() else x[1]
+            if x is True: return "true"
+            if x is False: return "false"
+            if isinstance(x, list): return "[" + " ".join(shen(v) for v in x) + "]"
+            return json.dumps(x)
+
+        symbols = set()
+        def collect(x):
+            if isinstance(x, tuple): symbols.add(x[1])
+            elif isinstance(x, list):
+                for item in x: collect(item)
+        collect(envelope)
+        config = "\n".join([
+            "(define vor.service.root -> " + shen(root) + ")",
+            "(define vor.service.expected -> " + shen(claim) + ")",
+            "(define vor.service.symbols -> " + shen([s(n) for n in sorted(symbols)]) + ")",
+            "(define vor.service.byte-limit -> 8192)",
+            "(define vor.service.depth-limit -> 64)",
+            "(define vor.service.node-limit -> 10000)",
+            "(define vor.service.proof-limit -> BUDGET)"])
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "admission.shen"
+            path.write_text(config.replace("BUDGET", "100"))
+            self.run_case(enc(envelope), 0, str(path))
+            forged = copy.deepcopy(envelope)
+            forged[3][6][0][2] = [s("verified"), True]
+            # The symbol is deliberately pre-existing; rejection is semantic.
+            path.write_text(config.replace("BUDGET", "100").replace(
+                "vor.service.symbols -> [", "vor.service.symbols -> [verified "))
+            self.run_case(enc(forged), 1, str(path))
+            incomplete = copy.deepcopy(envelope)
+            del incomplete[3][5][0][2][1]
+            self.run_case(enc(incomplete), 1, str(path))
+            path.write_text(config.replace("BUDGET", "1"))
+            self.run_case(enc(envelope), 2, str(path))
+
+
 if __name__ == "__main__":
     unittest.main()

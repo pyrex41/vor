@@ -22,3 +22,11 @@ test-service:
 
 program-demo:
 	./scripts/shen -l vor.shen -l examples/program.shen -e '(program-demo.run)'
+
+.PHONY: admission-demo
+admission-demo:
+	./scripts/shen -l vor.shen -l examples/admission.shen -e '(admission-demo.check)' -e '(vor.run-admitted (admission-demo.program) (admission-demo.signature) (admission-demo.contracts) (admission-demo.evidence) total.twice [[succ [succ zero]]] 2000 1000)'
+
+.PHONY: test-construction-mutations
+test-construction-mutations:
+	./scripts/test-construction-mutations

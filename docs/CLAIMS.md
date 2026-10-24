@@ -153,3 +153,13 @@ its original source and normalized definitions; code, inputs, and outcome may
 not be substituted. Checker fuel uncertainty remains unknown through the typed
 wrapper and process service. A checked modeled error is an evaluation fact,
 not application-contract success. See PROGRAM.md for all limits.
+
+
+R04/R05 add the generic total-program domain described in ADMISSION.md:
+`[total-program P Sig Contracts] / total-shen-1 / [total-contracts] / generic-proof`
+checks exact source-bound admission. Judgment `[theorem Formula]` checks a closed
+first-order theorem using only definition equations reconstructed from checked
+construction evidence `[constructed-theorem 0 Construction Proof]`. The root
+includes the additional initial-algebra and construction rules; it is not the
+unchanged 20-rule R02 root. Generic here describes the quantified application
+claim, not a completed generic soundness proof of the checker implementation.
