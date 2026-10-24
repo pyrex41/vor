@@ -61,6 +61,73 @@
         [decoded S Rest N]
         [rejected noncanonical-symbol])))
 
+\\ Restricted hostile-input path. Symbol names are compared with the trusted
+\\ pre-existing table before intern; vor.unpack remains trusted compatibility.
+(define vor.allowed-symbol
+  _ [] -> false
+  Text [S | Ss] -> (if (= Text (str S)) S (vor.allowed-symbol Text Ss)))
+
+(define vor.symbol-table?
+  [] -> true
+  [S | Ss] -> (and (symbol? S) (and (vor.names? [S])
+    (and (vor.symbol-table? Ss) (not (element? S Ss)))))
+  _ -> false)
+
+(define vor.unpack-known
+  Bytes Limit Depth Nodes Symbols ->
+    (if (and (vor.limits? Limit Depth Nodes) (vor.symbol-table? Symbols))
+      (if (vor.bytes? Bytes Limit)
+        (trap-error (vor.dec-known-end (vor.dec-known Bytes Depth Nodes Symbols))
+          (/. E [unknown codec-error]))
+        [rejected invalid-or-oversized-bytes])
+      [rejected invalid-codec-limits]))
+
+(define vor.dec-known-end
+  [decoded Value [] _] -> [ok Value]
+  [decoded _ _ _] -> [rejected trailing-bytes]
+  R -> R)
+
+(define vor.dec-known
+  _ 0 _ _ -> [unknown artifact-depth]
+  _ _ 0 _ -> [unknown artifact-nodes]
+  [0 | Rest] _ N _ -> [decoded [] Rest (- N 1)]
+  [1 | Rest] _ N _ -> [decoded false Rest (- N 1)]
+  [2 | Rest] _ N _ -> [decoded true Rest (- N 1)]
+  [3 Hi Lo | Rest] _ N _ -> [decoded (+ (* Hi 256) Lo) Rest (- N 1)]
+  [4 Hi Lo | Rest] _ N Symbols ->
+    (vor.dec-known-text symbol (+ (* Hi 256) Lo) Rest (- N 1) "" Symbols)
+  [5 Hi Lo | Rest] _ N Symbols ->
+    (vor.dec-known-text text (+ (* Hi 256) Lo) Rest (- N 1) "" Symbols)
+  [6 Hi Lo | Rest] D N Symbols ->
+    (if (= (+ (* Hi 256) Lo) 0)
+      [rejected noncanonical-empty-list]
+      (vor.dec-known-list (+ (* Hi 256) Lo) Rest (- D 1) (- N 1) [] Symbols))
+  [] _ _ _ -> [rejected truncated-value]
+  _ _ _ _ -> [rejected invalid-tag-or-header])
+
+(define vor.dec-known-text
+  Kind 0 Rest N Text Symbols ->
+    (if (= Kind symbol)
+      (let S (vor.allowed-symbol Text Symbols)
+        (if (= S false) [rejected unknown-symbol] [decoded S Rest N]))
+      [decoded Text Rest N])
+  Kind Count [B | Rest] N Text Symbols ->
+    (if (if (= Kind symbol) (and (>= B 33) (<= B 126)) (<= B 127))
+      (vor.dec-known-text Kind (- Count 1) Rest N (cn Text (n->string B)) Symbols)
+      [rejected invalid-text-byte])
+  _ _ _ _ _ _ -> [rejected truncated-text])
+
+(define vor.dec-known-list
+  0 Rest _ N Acc _ -> [decoded (reverse Acc) Rest N]
+  Count Rest D N Acc Symbols ->
+    (vor.dec-known-list-next Count D Acc Symbols
+      (vor.dec-known Rest D N Symbols)))
+
+(define vor.dec-known-list-next
+  Count D Acc Symbols [decoded Value Rest N] ->
+    (vor.dec-known-list (- Count 1) Rest D N [Value | Acc] Symbols)
+  _ _ _ _ R -> R)
+
 (define vor.dec-list
   0 Rest _ N Acc -> [decoded (reverse Acc) Rest N]
   Count Rest D N Acc -> (vor.dec-list-next Count D Acc (vor.dec Rest D N)))
@@ -144,6 +211,11 @@
 (define vor.check-artifact
   Root Expected Bytes Limit Depth Nodes ProofDepth ->
     (vor.check-unpacked Root Expected (vor.unpack Bytes Limit Depth Nodes) ProofDepth))
+
+(define vor.check-artifact-known
+  Root Expected Bytes Limit Depth Nodes ProofDepth Symbols ->
+    (vor.check-unpacked Root Expected
+      (vor.unpack-known Bytes Limit Depth Nodes Symbols) ProofDepth))
 
 (define vor.check-unpacked
   Root Expected [ok Artifact] D -> (vor.check-claim Root Expected Artifact D)
