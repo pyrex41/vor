@@ -50,6 +50,8 @@
     (and (vor.model? M) (vor.data? T))
   logic intuitionistic-propositions [derives G P] concrete-derivation ->
     (and (vor.context? G) (vor.formula? P))
+  [first-order Sig Vars] constructive-first-order [derives G P] concrete-derivation ->
+    (vor.fol-sequent? Sig Vars G P)
   _ _ _ _ -> false)
 
 (define vor.claim-root

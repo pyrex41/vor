@@ -42,3 +42,12 @@ Declared dependencies/assumptions are retained as data, not proved true or
 admitted transitively. The indexed claim datatype delegates to the same checker
 and is not an independent kernel. See CLAIMS.md for the restricted codec domain
 and the distinction between syntactic budgets and process resource isolation.
+
+
+R02 additionally trusts `spec/logic.shen` and `kernel/proof.shen`, including typed
+formation, de Bruijn operations, all 20 fixed rules, and the initial-algebra
+meaning of the reserved finite-tree sort. First-order symbols are mathematical
+names, never host callbacks. The System S first-order judgment delegates to the
+same kernel. The root is explicitly stronger than the original propositional
+fragment; artifact/label equality alone does not attest a running root version.
+See LOGIC-METATHEORY.md for residual semantic and encoding premises.

@@ -173,4 +173,7 @@
 (load "tests/claim-binding.shen")
 (load "tests/artifact.shen")
 (load "tests/assumption-boundaries.shen")
+(load "tests/first-order.shen")
+(load "tests/first-order-reference.shen")
+(load "tests/first-order-kripke.shen")
 (output "VOR: ~A checks passed.~%" (value *vor-test-count*))

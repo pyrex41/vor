@@ -67,3 +67,45 @@ hosted CI success, and this change does not alter account billing settings.
 All original proof obligations remain open. Three additional R01 obligations
 record codec round-trip, codec totality, and indexed-bound correspondence (57
 registry goals total). No tests above discharge those generic theorems.
+
+## R02 scoped first-order kernel
+
+Validated with the same checksum-pinned Linux x86_64 Shen-Scheme host,
+ShenOSKernel 43.1, and PR #117 overlay:
+
+- `make test`: **74,130 checks passed**. This includes the existing 795 checks,
+  161 additional targeted rule/scope/claim/budget/demo checks, 7,168 classical
+  finite-model sequent checks, 61,440 semantic substitution/weakening checks,
+  30 resulting-formula scope checks, and 4,536 two-world Kripke sequent checks.
+  These counts describe bounded engineering evidence, not theorem strength.
+- Every one of the 20 rules has a positive and negative case through the explicit
+  and indexed checking paths. Tests reject capture, eigenvariable escape,
+  assumption leaks, forged equality, incorrect arity/sorts, circular-reference
+  objects, arbitrary axioms, arbitrary-sort induction, and executable-looking data.
+- The indexed-claim wrapper preserves unknown for proof-fuel exhaustion, rather
+  than converting it into an invalid-evidence verdict.
+- `make logic-demo`: checked the closed quantified implication-distribution
+  theorem, including the indexed System S judgment. Eight fuel units suffice;
+  seven return unknown. This is an actual derivation relative to the fixed root,
+  not a sample-based proof of the theorem.
+- `make test-kernel`: **134 upstream assertions passed, 0 failed**.
+- Isolated source mutations were tested against copies using the same pinned
+  runtime; the working sources were not modified by the mutation runs:
+
+| Mutation | Observed rejecting regression |
+| --- | --- |
+| Omit universal-context raising | bad-generalization: expected rejected, got accepted |
+| Omit existential conclusion raising | witness-escape: expected rejected, got accepted |
+| Omit lifting a substituted term below binders | substitution-capture produced captured v0 instead of free v1 |
+| Accept arbitrary equality endpoints as reflexive | equality-forged: expected rejected, got accepted |
+| Replace the induction step target by its left hypothesis | tree-induction positive corpus no longer derived the intended theorem |
+
+The mutation runs detect these specific regressions; they do not establish
+complete mutation coverage or generic soundness. The finite interpreters are
+independent from checker execution and binder transformations, but are themselves
+unverified test code. LOGIC-METATHEORY.md describes the exact finite model families
+and the remaining universal constructive-soundness/termination obligations.
+
+The initial finite-tree algebra and root rules are explicitly trusted premises.
+The implementation does not prove its own consistency, syntax/derivation
+encoding adequacy, generic application admission, or compilation preservation.
