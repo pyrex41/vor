@@ -21,9 +21,13 @@ kernel, proof rules, or host bindings. It is not an untrusted artifact loader
 or sandbox. An acceptance result is valid only for an unchanged trusted image.
 
 Hash-checked bootstrap downloads establish the selected shared Shen-Scheme
-artifact identity, not that an artifact is correct. The exact PR #117 typechecker
-overlay is checksum-checked and loaded on every invocation; helper arities are
-also checked. The release binary is not assumed to embed those helpers. This is a
+artifact identity, not that an artifact is correct. Bootstrap records the digest
+of every installed host file against the verified archive. Each launch (scripts,
+kernel suite and service) stages private copies of those files and the exact PR
+#117 typechecker overlay, verifies the copies, and runs only them, so a check is
+never separated from the bytes loaded. The 43.1 version and helper arities are
+also checked. Anyone able to rewrite `.tools/` can still rewrite the record; the
+record detects drift and stale trees, not a hostile local administrator. The release binary is not assumed to embed those helpers. This is a
 runtime reproducibility and regression gate, not a proof of the compiler,
 Chez, or typechecker implementation.
 

@@ -1,19 +1,13 @@
 #!/bin/sh
 set -eu
 cd "$(dirname "$0")/.."
-host_path=".tools/host-path-$(uname -s)-$(uname -m)"
-[ -f "$host_path" ] || { echo 'Run make bootstrap first.' >&2; exit 2; }
-host=$(cat "$host_path")
-kernel=.tools/t-star-pr117.shen
-[ -f "$kernel" ] || { echo 'Run make bootstrap first.' >&2; exit 2; }
-if command -v sha256sum >/dev/null 2>&1; then actual=$(sha256sum "$kernel" | cut -d ' ' -f 1)
-else actual=$(shasum -a 256 "$kernel" | cut -d ' ' -f 1); fi
-[ "$actual" = 480e26c610b593b66f87118ea2fbeacaf34201e42f2279a09decfb9481879168 ] || {
-  echo 'PR 117 typechecker checksum mismatch' >&2; exit 1;
-}
+. scripts/host.sh
+vor_stage_host
 # Always install the pinned definitions, including when the release predates 117.
-exec "$host" eval \
+status=0
+"$vor_host" eval \
   -e '(if (= (value *version*) "43.1") shen43.1-ready (simple-error "Vör requires ShenOSKernel 43.1"))' \
-  -l "$kernel" \
+  -l "$vor_overlay" \
   -e '(if (and (= (value *implementation*) "chez-scheme") (= (arity shen.search-user-datatypes-h) 7) (= (arity shen.by-hypothesis-h) 7)) pr117-ready (simple-error "PR 117 helpers unavailable"))' \
-  "$@"
+  "$@" || status=$?
+exit "$status"
