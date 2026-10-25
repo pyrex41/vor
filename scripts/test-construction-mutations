@@ -13,7 +13,7 @@ mutations=[
 for name,filename,old,new in mutations:
  with tempfile.TemporaryDirectory(prefix='vor-r045-mutation-') as directory:
   dest=Path(directory)/'vor'
-  shutil.copytree(root,dest,ignore=shutil.ignore_patterns('.git','.tools','__pycache__'))
+  shutil.copytree(root,dest,ignore=shutil.ignore_patterns('.git','.tools','build','__pycache__'))
   (dest/'.tools').symlink_to(root/'.tools',target_is_directory=True)
   path=dest/filename;s=path.read_text();assert s.count(old)==1,(name,s.count(old));path.write_text(s.replace(old,new))
   result=subprocess.run(['make','test'],cwd=dest,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,timeout=30)

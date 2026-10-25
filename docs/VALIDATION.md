@@ -283,3 +283,40 @@ The universal audit statements and explicit interfaces are in audit/README.md.
 They do not silently prove all production source/model, full first-order,
 checker/calculus, ordered-callee or native host/compiler correspondences. Hash pins
 are drift evidence, not those bridges. The complete 57-goal closure remains open.
+
+## Original first-order rule closure and native lookup correspondence
+
+Validated 2026-10-24 (America/Chicago) on the same pinned shared Chez/kernel43.1/
+PR117 and optional Coq 8.18.0 audit toolchain. The actual Chez compiler is unchanged.
+
+- `make test`: **76,892 checks passed**. This includes per-generated-sequent
+  formation, budget-zero uncertainty, large lookup indices and inert payloads.
+- `make test-kernel`: **134 passed, zero failed**.
+- `make test-service`: **16 tests passed** after rebasing onto main, retaining
+  the merged worker-group cleanup fix and its regression test.
+- `make test-metatheory`: **46 named theorem dependency checks**, **18 modules
+  kernel-rechecked**, no global postulates; **19 serializer/correspondence tests**;
+  **504 actual Shen/model acceptance comparisons**, including 163 accepted cases
+  and every original R02 rule over nine fuel budgets. The earlier twelve symbolic
+  body preservation certificates still check.
+- Negative proof gates reject four corrupted stack translations, two modified
+  actual KLambda lookup captures, and two capture/quantifier implementation bugs.
+  These are proof-kernel failures, distinct from a passing test sample table.
+- `make test-construction-mutations`: **all five mutants detected**. Mutation
+  copies now exclude generated build output; this avoids a copy/archive race
+  when the independent audit runs in parallel, while preserving prior evidence.
+- Python syntax checks and `git diff --check` pass.
+
+The new universal results include sorted term typing, renaming/substitution
+semantics, weakening, binder removal, all twenty original first-order rules
+including finite-tree induction, raw encoding/decoder injection and binding
+operation refinement. The actual compiler-produced KLambda definition of
+vor.fol-at has a checked all-input contract and agrees with the formal variable
+lookup for arbitrary contexts/indices under an injective sort encoding. It does
+not use an opaque recursive-callee oracle.
+
+See audit/FIRST-ORDER-CORRESPONDENCE.md for the exact statement interfaces.
+Raw traversal refinement is not silently relabelled a proof of every compiled
+Shen walker. Source capture/primitive and backend preservation, the other native
+helpers/dispatcher, user-algebra extension rules, construction/callee bridges
+and full release closure remain explicit obligations.

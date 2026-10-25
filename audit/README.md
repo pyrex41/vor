@@ -19,7 +19,7 @@ install system packages. Alternatively supply `COQC` and `COQCHK` for that versi
 Other operating systems should use a local compatible installation. Production
 Shen keeps its unchanged shared Chez/kernel43.1/PR117 toolchain.
 
-The command compiles nine modules, checks the global assumptions of twenty named
+The command compiles eighteen modules, checks the global assumptions of forty-six named
 theorems, and independently rechecks the compiled modules with `coqchk`. There
 are no `Admitted`, postulated semantic axioms, classical logic imports or unchecked
 native casts. Function/model/certificate premises are **explicit theorem
@@ -38,14 +38,23 @@ true of the Shen implementation automatically.
 | Validation.v | The independent prefix validator accepts exactly the compiler's instruction prefix; checked complete code inherits preservation, totality and all-outcome correctness | Applies to the reflected expression/code, conditional on the stated source/callee semantics |
 | CEK.v | Big-step expression evaluation has a finite R03-style CEK execution and every terminating CEK outcome agrees | Constructor/local/let/argument control only; callees are summarized by the same fixed oracle, not an unproved clause-selection algorithm |
 | Certificates.v (generated, versioned) | Twelve exact symbolic function bodies have checked translation certificates and preservation for **every** environment and call interpretation | Generated from the exact normalized Shen program and actual compiler output through the source-locked reifier |
-| Assumptions.v | Reports dependencies of twenty named generic theorems | The driver rejects unexpected global axioms; ordinary quantified premises remain visible |
+| FirstOrderSyntax/Semantics/Kernel.v | All twenty original sorted rules, with proved weakening/substitution/typing and finite-tree induction | Model interpretations respect declared functions and the reserved finite-tree meaning |
+| FirstOrderEncoding/Raw.v | Raw decoder round trips/injectivity/soundness and universal binding-operation representation refinements | Compiled walker implementation bridges remain explicit |
+| NativeLookup/NativeCapture/LookupBridge.v | Actual captured lookup KLambda body implements the formal variable lookup for every context/index | Exact natural primitive semantics, faithful capture and backend/host preservation remain explicit |
+| FirstOrderCases.v (generated) | 504 actual Shen/model acceptance comparisons | Finite implementation evidence, not universal source correspondence |
+| Assumptions.v | Reports dependencies of forty-six named generic theorems | The driver rejects unexpected global axioms; ordinary quantified premises remain visible |
+
+The original propositional module is retained as a smaller independent audit.
+The many-sorted first-order extension is detailed in
+[FIRST-ORDER-CORRESPONDENCE.md](FIRST-ORDER-CORRESPONDENCE.md).
 
 The eleven logical rules are hypothesis, top, conjunction introduction and both
 projections, implication introduction/elimination, both disjunction introductions,
 cases, and bottom elimination. Their model uses constructive `Prop`; no finite
 truth table establishes these results. The source scheduler now uses the same
-ordered work-list control as Checker.v. Every existing rule remains in the Shen
-dispatcher, including the unaudited first-order/algebra extensions.
+ordered work-list control as Checker.v. Every existing rule remains in the Shen dispatcher. The original twenty rules
+now have sorted semantic proofs; the three user-algebra extension rules and
+full implementation bridges remain open.
 
 Admission's call order compares definition rank first, then the size of the
 measured input. Earlier definitions may receive arbitrarily large arguments;
@@ -102,8 +111,9 @@ symbolic artifacts. It does **not** close the complete end-to-end soundness clai
 1. Prove the source/reifier/decoder correspondence and Shen implementation of
    the reflected validators, scheduler and machine operations. `source-lock.json`
    makes drift visible; a hash pin is identity evidence, not this theorem.
-2. Extend local soundness to the full typed first-order/algebra kernel, including
-   de Bruijn weakening/substitution/quantification and constructor induction.
+2. The original twenty-rule first-order soundness and generic binder semantics
+   are now checked. Extend this to the three user-algebra extension rules and
+   finish the literal compiled helper/dispatcher implementation bridges.
 3. Prove that `vor.construct-check` acceptance reconstructs the actual calculus
    derivation: pattern coverage, matcher environments, lexical slots, argument
    typing and exact decreasing-call indices. Then connect checked logical posts

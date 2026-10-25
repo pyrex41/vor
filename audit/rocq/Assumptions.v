@@ -1,4 +1,4 @@
-From VorAudit Require Import Checker Propositional Runtime Admission Compiler Validation CEK.
+From VorAudit Require Import Checker Propositional Runtime Admission Compiler Validation CEK FirstOrderSyntax FirstOrderSemantics FirstOrderKernel FirstOrderEncoding FirstOrderRaw NativeLookup NativeCapture LookupBridge.
 Print Assumptions check_derivation.
 Print Assumptions check_sound.
 Print Assumptions check_remainder.
@@ -19,3 +19,29 @@ Print Assumptions Validation.checked_compilation_total_and_all_outcomes.
 Print Assumptions CEK.evaluator_adequacy.
 Print Assumptions CEK.final_result_unique.
 Print Assumptions CEK.adequacy_all_outcomes.
+Print Assumptions FirstOrderSyntax.shift_binder.
+Print Assumptions FirstOrderSyntax.remove_binder.
+Print Assumptions FirstOrderSemantics.formula_renaming.
+Print Assumptions FirstOrderSemantics.formula_substitution.
+Print Assumptions FirstOrderSemantics.weakening.
+Print Assumptions FirstOrderSemantics.binder_substitution.
+Print Assumptions FirstOrderSemantics.term_typing_sound.
+Print Assumptions FirstOrderKernel.expand_sound.
+Print Assumptions FirstOrderKernel.checker_sound.
+Print Assumptions FirstOrderEncoding.term_roundtrip.
+Print Assumptions FirstOrderEncoding.formula_roundtrip.
+Print Assumptions FirstOrderEncoding.term_encoding_injective.
+Print Assumptions FirstOrderEncoding.formula_encoding_injective.
+Print Assumptions FirstOrderEncoding.raw_checker_sound.
+Print Assumptions FirstOrderRaw.shift_term_refinement.
+Print Assumptions FirstOrderRaw.shift_formula_refinement.
+Print Assumptions FirstOrderRaw.remove_term_refinement.
+Print Assumptions FirstOrderRaw.remove_formula_refinement.
+Print Assumptions NativeLookup.native_lookup_total.
+Print Assumptions NativeLookup.eval_deterministic.
+Print Assumptions NativeLookup.native_lookup_all_outcomes.
+Print Assumptions NativeCapture.actual_lookup_total.
+Print Assumptions NativeCapture.actual_lookup_all_outcomes.
+Print Assumptions LookupBridge.native_variable_lookup_correspondence.
+Print Assumptions LookupBridge.native_variable_lookup_all_outcomes.
+Print Assumptions LookupBridge.native_variable_found_iff.

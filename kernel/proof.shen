@@ -29,7 +29,9 @@
   _ [] Fuel -> [proved Fuel]
   _ [_ | _] 0 -> [unknown proof-fuel]
   Sig [[goal V G P E] | Rest] Fuel ->
-    (vor.fol-work-expanded Sig Rest (- Fuel 1) (vor.fol-expand Sig V G P E))
+    (if (vor.fol-sequent? Sig V G P)
+      (vor.fol-work-expanded Sig Rest (- Fuel 1) (vor.fol-expand Sig V G P E))
+      [rejected malformed-first-order-work-sequent])
   _ _ _ -> [rejected malformed-first-order-work])
 (define vor.fol-work-expanded
   Sig Rest Fuel [premises Children] -> (vor.fol-work Sig (append Children Rest) Fuel)

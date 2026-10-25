@@ -124,3 +124,14 @@ The proof-closure matrix in audit/README.md separates these results from the
 remaining source/reifier, full first-order, checker/calculus, callee and native
 preservation bridges. No requirement in the 57-goal registry is marked completed
 solely by a model theorem whose implementation correspondence remains unproved.
+
+
+The next audit stage now checks the complete original twenty-rule many-sorted
+first-order model, generic weakening/substitution semantics, and raw encoding/
+binding refinements. The actual captured KLambda body of vor.fol-at has a checked
+universal contract and a representation-parametric bridge to formal variable
+lookup. Every generated Shen work-list sequent is now formation-checked. See
+audit/FIRST-ORDER-CORRESPONDENCE.md for exact interfaces and validation. The three
+user-algebra extension rules, the remaining literal compiled helpers/dispatcher,
+construction/callee bridges and native backend preservation remain open. The
+46 named theorem checks are not a claim of full implementation/release closure.

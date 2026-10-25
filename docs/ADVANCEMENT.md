@@ -66,3 +66,14 @@ changing other typed arguments and admits accumulator reversal under a quantifie
 length proof. See audit/README.md for proved model/calculus results and the exact
 remaining bridges to production Shen and native execution. This advances R04/R05,
 R15/R16 proof work without renumbering or declaring their complete closure.
+
+
+The next audit stage now checks the complete original twenty-rule many-sorted
+first-order model, generic weakening/substitution semantics, and raw encoding/
+binding refinements. The actual captured KLambda body of vor.fol-at has a checked
+universal contract and a representation-parametric bridge to formal variable
+lookup. Every generated Shen work-list sequent is now formation-checked. See
+audit/FIRST-ORDER-CORRESPONDENCE.md for exact interfaces and validation. The three
+user-algebra extension rules, the remaining literal compiled helpers/dispatcher,
+construction/callee bridges and native backend preservation remain open. The
+46 named theorem checks are not a claim of full implementation/release closure.
