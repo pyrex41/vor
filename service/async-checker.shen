@@ -38,11 +38,17 @@
         (write-byte Seq (value *vor-async-wire*))))
 
 (define vor.async-response
+  [reported Result] -> (vor.async-report-response (vor.async-status Result)
+                        (vor.pack Result 262144 128 65536))
   [produced Bytes] -> (if (vor.bytes? Bytes 262144) [3 Bytes] [3 []])
   Result -> [(vor.async-status Result) []])
+(define vor.async-report-response
+  Status [ok Bytes] -> [Status Bytes]
+  _ _ -> [3 []])
 (define vor.async-request
   1 Bytes -> (vor.async.produce Bytes)
   3 Bytes -> (vor.async.check Bytes)
+  4 Bytes -> [reported (vor.async.check Bytes)]
   _ _ -> [rejected unsupported-rpc-request])
 (define vor.async-write-bytes
   [] -> true

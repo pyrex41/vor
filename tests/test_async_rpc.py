@@ -108,6 +108,46 @@ class WireTests(unittest.TestCase):
 
 
 class RealCheckerTests(unittest.TestCase):
+    def test_finish_returns_the_actual_bounded_checker_result(self):
+        spec = importlib.util.spec_from_file_location("report_fixture", ROOT / "tests/test_service.py")
+        old = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(old)
+        source = rpc.source_identity(ROOT)
+        payload = old.enc(old.envelope_value())
+        host = Path((ROOT / ".tools" / ("host-path-" + platform.system() + "-" + platform.machine())).read_text().strip())
+        if not host.is_absolute(): host = ROOT / host
+        config = ROOT / "service/async-config-example.shen"
+        bodies = [request(payload, "ordinary", source=source),
+                  request(payload, "report", source=source, kind=4),
+                  request(b"\0", "invalid-report", source=source, kind=4)]
+        command = [sys.executable, str(ROOT / "service/async_rpc.py"), "--config", str(config),
+                   "--source-id", source, "--config-sha256", rpc.file_identity(config),
+                   "--host-sha256", rpc.file_identity(host), "--runtime-root", str(host.parent.parent),
+                   "--runtime-sha256", rpc.runtime_identity(host.parent.parent), "--model-id", "model",
+                   "--adapter-id", "adapter", "--timeout", "30"]
+        raw = b"".join(struct.pack(">I", len(body)) + body for body in bodies)
+        result = subprocess.run(command, input=raw, capture_output=True, cwd=ROOT, timeout=45)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        frames = []
+        offset = 0
+        while offset < len(result.stdout):
+            size = struct.unpack(">I", result.stdout[offset:offset+4])[0]
+            frames.append(result.stdout[offset:offset+size+4]); offset += size+4
+        self.assertEqual(len(frames), 3)
+        self.assertEqual(frames[0], rpc.encode_reply(rpc.decode_request(bodies[0])[4], 1))
+        for frame, status, symbol, body in zip(frames[1:], (1, 2), (b"checked", b"rejected"), bodies[1:]):
+            binding = rpc.decode_request(body)[4]
+            marker = 4 + 3 + len(binding)
+            self.assertEqual(frame[marker], status)
+            size = struct.unpack(">I", frame[marker+1:marker+5])[0]
+            encoded = frame[marker+5:]
+            self.assertGreater(size, 0)
+            self.assertEqual(size, len(encoded))
+            self.assertLessEqual(size, rpc.MAX_PAYLOAD)
+            self.assertEqual(encoded[0], 6)
+            self.assertGreaterEqual(struct.unpack(">H", encoded[1:3])[0], 1)
+            self.assertTrue(encoded[3:].startswith(b"\x04" + struct.pack(">H", len(symbol)) + symbol))
+
     def test_producer_payload_never_carries_acceptance(self):
         spec = importlib.util.spec_from_file_location("old_service_producer", ROOT / "tests/test_service.py")
         old = importlib.util.module_from_spec(spec)

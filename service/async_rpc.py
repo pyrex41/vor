@@ -54,8 +54,8 @@ def decode_request(body):
     if not all(1 <= value <= bound for value, bound in zip(limits, (64, 256, 32, 16))):
         raise ProtocolError("resource limits")
     kind = take(1)[0]
-    if kind not in (1, 3):
-        raise ProtocolError("checker accepts produce/observe requests only")
+    if kind not in (1, 3, 4):
+        raise ProtocolError("checker accepts produce/observe/report requests only")
     size = struct.unpack(">I", take(4))[0]
     if not 1 <= size <= MAX_PAYLOAD:
         raise ProtocolError("payload length")

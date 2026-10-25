@@ -17,7 +17,10 @@ between measurement and execution; hashing is not a filesystem sandbox.
 
 Start invokes fixed `vor.async.produce` and returns candidate bytes with UNKNOWN
 status. Observe invokes fixed `vor.async.check` and alone supplies a semantic
-verdict. Payloads are inert VOR-DATA byte sequences; no JSON, ETF,
+verdict. Finish (kind 4) performs the same independent check and also returns
+its bounded, canonical VOR-DATA result. Reducers bind their failure signature to
+this checker-owned result, rather than inferring a reason from a status byte.
+Observe retains its existing empty reply payload. Payloads are inert VOR-DATA byte sequences; no JSON, ETF,
 artifact-selected function, or artifact-selected source is evaluated. The
 example configuration checks the existing finite mutex claim, and is a
 transport example rather than fenced-job qualification.
