@@ -37,16 +37,35 @@
         (write-byte Status (value *vor-async-wire*))
         (write-byte Seq (value *vor-async-wire*))))
 
+(define vor.async-response
+  [produced Bytes] -> (if (vor.bytes? Bytes 262144) [3 Bytes] [3 []])
+  Result -> [(vor.async-status Result) []])
+(define vor.async-request
+  1 Bytes -> (vor.async.produce Bytes)
+  3 Bytes -> (vor.async.check Bytes)
+  _ _ -> [rejected unsupported-rpc-request])
+(define vor.async-write-bytes
+  [] -> true
+  [B | Bs] -> (do (write-byte B (value *vor-async-wire*)) (vor.async-write-bytes Bs)))
+(define vor.async-write-result
+  Seq [Status Bytes] ->
+    (let Size (length Bytes)
+      (do (vor.async-write Seq Status)
+          (write-byte 0 (value *vor-async-wire*))
+          (write-byte (floor (/ Size 65536)) (value *vor-async-wire*))
+          (write-byte (mod (floor (/ Size 256)) 256) (value *vor-async-wire*))
+          (write-byte (mod Size 256) (value *vor-async-wire*))
+          (vor.async-write-bytes Bytes))))
 (define vor.async-loop
   256 -> true
   Seq -> (let A (read-byte (stinput))
     (if (= A -1) true
       (let Size (vor.async-size A)
-        (if (and (> Size 0) (<= Size 262144))
-          (let Bytes (vor.async-bytes Size [])
-            (let Result (trap-error (vor.async.check Bytes)
+        (if (and (> Size 0) (<= Size 262145))
+          (let Kind (vor.async-byte) Bytes (vor.async-bytes (- Size 1) [])
+            (let Result (trap-error (vor.async-request Kind Bytes)
                            (/. E [unknown checker-error]))
-              (do (vor.async-write Seq (vor.async-status Result))
+              (do (vor.async-write-result Seq (vor.async-response Result))
                   (vor.async-loop (+ Seq 1)))))
           (simple-error "async payload bound"))))))
 

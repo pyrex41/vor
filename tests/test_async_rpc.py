@@ -17,17 +17,17 @@ rpc = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(rpc)
 
 
-def request(payload=b"\0", request_id="q", nonce=7, source="source"):
+def request(payload=b"\0", request_id="q", nonce=7, source="source", kind=3):
     ids = ("session", "run", request_id, source, "model", "adapter")
     body = b"\x00\x01\x01" + b"".join(struct.pack(">H", len(x)) + x.encode() for x in ids)
     body += struct.pack(">Q", nonce) + hashlib.sha256(payload).digest()
-    return body + struct.pack(">HIHH", 64, 256, 32, 16) + b"\3" + struct.pack(">I", len(payload)) + payload
+    return body + struct.pack(">HIHH", 64, 256, 32, 16) + bytes((kind,)) + struct.pack(">I", len(payload)) + payload
 
 
 class WireTests(unittest.TestCase):
     def test_exact_echo_and_four_statuses(self):
         body = request()
-        ids, nonce, limits, payload, binding = rpc.decode_request(body)
+        ids, nonce, limits, payload, binding, kind = rpc.decode_request(body)
         self.assertEqual(ids, ["session", "run", "q", "source", "model", "adapter"])
         self.assertEqual((nonce, limits, payload), (7, (64, 256, 32, 16), b"\0"))
         for status in (1, 2, 3, 4):
@@ -84,7 +84,7 @@ class WireTests(unittest.TestCase):
             marker = Path(directory) / "escaped"
             started = Path(directory) / "started"
             worker_code = f"from pathlib import Path;import time;Path({str(started)!r}).touch();time.sleep(.5);Path({str(marker)!r}).touch();time.sleep(3)"
-            parent_code = "import os,subprocess,sys,time; subprocess.Popen([sys.executable,sys.argv[1],str(os.getpid()),sys.executable,'-c',sys.argv[2]],start_new_session=True);time.sleep(.2);os._exit(0)"
+            parent_code = "import os,subprocess,sys,time;r,w=os.pipe();subprocess.Popen([sys.executable,sys.argv[1],str(os.getpid()),str(w),sys.executable,'-c',sys.argv[2]],pass_fds=(w,),start_new_session=True);os.close(w);time.sleep(.2);os._exit(0)"
             parent = subprocess.Popen([sys.executable, "-c", parent_code, str(ROOT / "service/async_guard.py"), worker_code], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             parent.wait(timeout=3)
             time.sleep(.7)
@@ -93,6 +93,27 @@ class WireTests(unittest.TestCase):
 
 
 class RealCheckerTests(unittest.TestCase):
+    def test_producer_payload_never_carries_acceptance(self):
+        spec = importlib.util.spec_from_file_location("old_service_producer", ROOT / "tests/test_service.py")
+        old = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(old)
+        payload = old.enc(old.envelope_value())
+        source = rpc.source_identity(ROOT)
+        host = Path((ROOT / ".tools" / ("host-path-" + platform.system() + "-" + platform.machine())).read_text().strip())
+        if not host.is_absolute(): host = ROOT / host
+        config = ROOT / "service/async-config-example.shen"
+        bodies = [request(payload, "produce", source=source, kind=1), request(payload, "check", source=source)]
+        command = [sys.executable, str(ROOT / "service/async_rpc.py"), "--config", str(config), "--source-id", source,
+                   "--config-sha256", rpc.file_identity(config), "--host-sha256", rpc.file_identity(host),
+                   "--runtime-root", str(host.parent.parent), "--runtime-sha256", rpc.runtime_identity(host.parent.parent),
+                   "--model-id", "model", "--adapter-id", "adapter", "--timeout", "30"]
+        raw = b"".join(struct.pack(">I", len(body)) + body for body in bodies)
+        result = subprocess.run(command, input=raw, capture_output=True, cwd=ROOT, timeout=40)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        expected = rpc.encode_reply(rpc.decode_request(bodies[0])[4], 3, payload)
+        expected += rpc.encode_reply(rpc.decode_request(bodies[1])[4], 1)
+        self.assertEqual(result.stdout, expected)
+
     def test_fresh_persistent_equivalence_and_duplicate_rejection(self):
         spec = importlib.util.spec_from_file_location("old_service", ROOT / "tests/test_service.py")
         old = importlib.util.module_from_spec(spec)

@@ -15,8 +15,9 @@ paths in the selected bundle and rejects symlinks. This binds the Chez boot
 files as well as the executable. The operator must hold these files immutable
 between measurement and execution; hashing is not a filesystem sandbox.
 
-Only Observe requests enter this service. Payload is an inert VOR-DATA byte
-sequence decoded by the fixed configuration's `vor.async.check`; no JSON, ETF,
+Start invokes fixed `vor.async.produce` and returns candidate bytes with UNKNOWN
+status. Observe invokes fixed `vor.async.check` and alone supplies a semantic
+verdict. Payloads are inert VOR-DATA byte sequences; no JSON, ETF,
 artifact-selected function, or artifact-selected source is evaluated. The
 example configuration checks the existing finite mutex claim, and is a
 transport example rather than fenced-job qualification.
@@ -33,7 +34,9 @@ fresh history value. `--fresh` starts a new Shen process for each request.
 Request input, worker execution and reply output each have bounded deadlines;
 worker diagnostics have a cumulative 4096-byte cap. An independent guardian
 kills the owned process group if its supervising launcher dies, including on
-macOS. Cleanup always kills/reaps the owned group. This transport provides no
+macOS. The guardian holds its process-group identity alive until cleanup, even when Shen
+exits quickly. Cleanup kills the group before reaping the guardian, preventing
+PID reuse from targeting an unrelated process group. This transport provides no
 aggregate physical-memory or filesystem/network isolation. Operator policy
 must apply the native resource controls appropriate for its qualification.
 

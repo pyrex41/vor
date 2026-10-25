@@ -54,8 +54,8 @@ def decode_request(body):
     if not all(1 <= value <= bound for value, bound in zip(limits, (64, 256, 32, 16))):
         raise ProtocolError("resource limits")
     kind = take(1)[0]
-    if kind != 3:
-        raise ProtocolError("checker accepts observation requests only")
+    if kind not in (1, 3):
+        raise ProtocolError("checker accepts produce/observe requests only")
     size = struct.unpack(">I", take(4))[0]
     if not 1 <= size <= MAX_PAYLOAD:
         raise ProtocolError("payload length")
@@ -64,13 +64,15 @@ def decode_request(body):
         raise ProtocolError("payload binding")
     # The reply echoes this exact canonical binding, not a reconstructed subset.
     binding_end = pos - size - 5
-    return ids, nonce, limits, payload, body[3:binding_end]
+    return ids, nonce, limits, payload, body[3:binding_end], kind
 
 
-def encode_reply(binding, status):
+def encode_reply(binding, status, payload=b""):
     if status not in (1, 2, 3, 4):
         raise ProtocolError("checker status")
-    body = b"\x00\x01\x02" + binding + bytes((status,)) + b"\x00\x00\x00\x00"
+    if len(payload) > MAX_PAYLOAD:
+        raise ProtocolError("reply payload budget")
+    body = b"\x00\x01\x02" + binding + bytes((status,)) + struct.pack(">I", len(payload)) + payload
     return struct.pack(">I", len(body)) + body
 
 
@@ -106,37 +108,50 @@ def read_frame(fd, timeout):
 class Worker:
     """One owned long-lived Shen process; per-history state is a function input."""
     def __init__(self, command, root, timeout):
-        self.child = subprocess.Popen([sys.executable, str(Path(root) / "service/async_guard.py"), str(os.getpid()), *command], cwd=root, stdin=subprocess.PIPE,
-                                      stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                      start_new_session=True, bufsize=0)
+        status_read, status_write = os.pipe()
+        try:
+            self.child = subprocess.Popen(
+                [sys.executable, str(Path(root) / "service/async_guard.py"), str(os.getpid()), str(status_write), *command],
+                cwd=root, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                pass_fds=(status_write,), start_new_session=True, bufsize=0)
+        except BaseException:
+            os.close(status_read)
+            raise
+        finally:
+            os.close(status_write)
+        self.status_fd = status_read
+        os.set_blocking(status_read, False)
+        self.closed = False
         self.diagnostics = 0
         self.timeout = timeout
         self.seq = 0
         for stream in (self.child.stdin, self.child.stdout, self.child.stderr):
             os.set_blocking(stream.fileno(), False)
         try:
-            if self.exchange(b"", 0) != b"VA\x01\x00\x00":
+            if self.exchange(b"", 0, startup=True) != b"VA\x01\x00\x00":
                 raise ProtocolError("checker startup")
         except BaseException:
             self.close()
             raise
 
-    def exchange(self, packet, seq):
+    def exchange(self, packet, seq, startup=False):
         deadline = time.monotonic() + self.timeout
         out = bytearray()
         offset = 0
+        expected = 5 if startup else 9
         with selectors.DefaultSelector() as selector:
             selector.register(self.child.stdout, selectors.EVENT_READ, "out")
             selector.register(self.child.stderr, selectors.EVENT_READ, "err")
+            selector.register(self.status_fd, selectors.EVENT_READ, "status")
             if packet:
                 selector.register(self.child.stdin, selectors.EVENT_WRITE, "in")
-            while len(out) < 5 or offset < len(packet):
-                if self.child.poll() is not None:
-                    raise ProtocolError("checker exited")
+            while len(out) < expected or offset < len(packet):
                 remaining = deadline - time.monotonic()
                 if remaining <= 0:
                     raise ProtocolError("checker deadline")
                 for key, _ in selector.select(min(remaining, .1)):
+                    if key.data == "status":
+                        raise ProtocolError("checker exited before transcript completion")
                     if key.data == "in":
                         try:
                             offset += os.write(key.fd, packet[offset:offset+65536])
@@ -157,27 +172,34 @@ class Worker:
                                 raise ProtocolError("checker diagnostics budget")
                         else:
                             out.extend(data)
-                            if len(out) > 5:
+                            if not startup and len(out) >= 9:
+                                size = struct.unpack(">I", out[5:9])[0]
+                                if size > MAX_PAYLOAD:
+                                    raise ProtocolError("checker output budget")
+                                expected = 9 + size
+                            if len(out) > expected:
                                 raise ProtocolError("checker output budget")
-            if self.child.poll() is not None or out[:3] != b"VA\x01" or out[4] != seq:
+            if out[:3] != b"VA\x01" or out[4] != seq:
                 raise ProtocolError("checker reply binding")
             return bytes(out)
 
-    def check(self, payload):
+    def check(self, payload, kind=3):
         if self.seq >= 256:
             raise ProtocolError("request budget")
-        reply = self.exchange(struct.pack(">I", len(payload)) + payload, self.seq)
+        request = bytes((kind,)) + payload
+        reply = self.exchange(struct.pack(">I", len(request)) + request, self.seq)
         if reply[3] not in (1, 2, 3, 4):
             raise ProtocolError("checker result")
         self.seq += 1
-        return reply[3]
+        return reply[3], reply[9:]
 
     def finish(self):
-        """Require clean EOF/exit before a transcript can be used as evidence."""
+        """Require worker EOF and a zero actual-worker exit before using evidence."""
         self.child.stdin.close()
         deadline = time.monotonic() + self.timeout
+        exit_packet = bytearray()
         with selectors.DefaultSelector() as selector:
-            for stream, kind in ((self.child.stdout, "out"), (self.child.stderr, "err")):
+            for stream, kind in ((self.child.stdout, "out"), (self.child.stderr, "err"), (self.status_fd, "status")):
                 selector.register(stream, selectors.EVENT_READ, kind)
             while selector.get_map():
                 remaining = deadline - time.monotonic()
@@ -192,30 +214,45 @@ class Worker:
                         selector.unregister(key.fileobj)
                     elif key.data == "out":
                         raise ProtocolError("trailing checker output")
+                    elif key.data == "status":
+                        exit_packet.extend(chunk)
+                        if len(exit_packet) > 4:
+                            raise ProtocolError("invalid checker exit packet")
                     else:
                         self.diagnostics += len(chunk)
                         if self.diagnostics > MAX_DIAGNOSTIC:
                             raise ProtocolError("checker diagnostics budget")
-        try:
-            status = self.child.wait(timeout=max(.001, deadline - time.monotonic()))
-        except subprocess.TimeoutExpired as error:
-            raise ProtocolError("checker exit deadline") from error
-        if status != 0:
+        if len(exit_packet) != 4 or struct.unpack(">i", exit_packet)[0] != 0:
             raise ProtocolError("checker failed on completion")
 
     def close(self):
-        # Also kill descendants of a leader that has already exited.
+        if self.closed:
+            return
+        self.closed = True
+        failure = None
         try:
-            os.killpg(self.child.pid, signal.SIGKILL)
-        except ProcessLookupError:
-            pass
-        try:
-            self.child.wait(timeout=2)
-        except subprocess.TimeoutExpired as error:
-            raise ProtocolError("checker cleanup incomplete") from error
+            # The guardian has never been reaped and deliberately stays alive,
+            # so this group identity cannot refer to an unrelated reused PID.
+            try:
+                os.killpg(self.child.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            except OSError as error:
+                failure = error
+                try:
+                    self.child.kill()
+                except OSError:
+                    pass
+            try:
+                self.child.wait(timeout=2)
+            except subprocess.TimeoutExpired as error:
+                failure = error
         finally:
             for stream in (self.child.stdin, self.child.stdout, self.child.stderr):
                 stream.close()
+            os.close(self.status_fd)
+        if failure is not None:
+            raise ProtocolError("checker cleanup incomplete") from failure
 
 
 def source_identity(root):
@@ -306,7 +343,7 @@ def main():
                     worker.close()
                     worker = None
                 return 0
-            ids, nonce, limits, payload, binding = decode_request(body)
+            ids, nonce, limits, payload, binding, kind = decode_request(body)
             if ids[3:] != [args.source_id, args.model_id, args.adapter_id]:
                 raise ProtocolError("trusted policy identity")
             stable = (ids[0], ids[1], nonce, limits)
@@ -317,12 +354,12 @@ def main():
             seen.add(ids[2])
             if worker is None:
                 worker = Worker(command, root, args.timeout)
-            status = worker.check(payload)
+            status, result_payload = worker.check(payload, kind)
             if args.fresh:
                 worker.finish()
                 worker.close()
                 worker = None
-            reply = encode_reply(binding, status)
+            reply = encode_reply(binding, status, result_payload)
             # Bound a client that stops reading replies as well as input stalls.
             deadline = time.monotonic() + args.timeout
             offset = 0
