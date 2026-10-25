@@ -107,6 +107,33 @@
       [cons succ [cons (admit-test.x) []]] (admit-test.x) ->
         [cons succ [cons [total.add (admit-test.x) (admit-test.x)] []]]]))) rejected)
 
+(define admit-test.copy
+  -> [define total.copy zero -> zero
+       [cons succ [cons (admit-test.x) []]] -> [cons succ [cons [total.copy (admit-test.x)] []]]])
+(define admit-test.copy-step -> [cons succ [cons [total.copy (admit-test.x)] []]])
+(test.equal admission-no-overlapping-clause
+  (hd (admit-test.recheck (admit-test.mutant (admit-test.copy)
+    [define total.copy zero -> zero
+      [cons succ [cons (admit-test.x) []]] -> (admit-test.copy-step)
+      zero -> zero]))) rejected)
+(test.equal admission-no-reordered-clauses
+  (hd (admit-test.recheck (admit-test.mutant (admit-test.copy)
+    [define total.copy [cons succ [cons (admit-test.x) []]] -> (admit-test.copy-step)
+      zero -> zero]))) rejected)
+(test.equal admission-no-wildcard-pattern
+  (hd (admit-test.recheck (admit-test.mutant (admit-test.copy)
+    [define total.copy zero -> zero _ -> zero]))) rejected)
+(test.equal admission-no-deep-field-pattern
+  (hd (admit-test.recheck (admit-test.mutant (admit-test.copy)
+    [define total.copy zero -> zero
+      [cons succ [cons [cons succ [cons (admit-test.x) []]] []]] -> zero]))) rejected)
+(test.equal admission-no-primitive-body
+  (hd (admit-test.recheck (admit-test.mutant (admit-test.copy-step)
+    [hd [cons zero []]]))) rejected)
+(test.equal admission-no-extra-constructor-field
+  (hd (admit-test.recheck (admit-test.mutant (admit-test.copy-step)
+    [cons succ [cons [total.copy (admit-test.x)] [cons zero []]]]))) rejected)
+
 (define admit-test.associativity
   -> [forall natural [forall natural [forall natural
     [equal natural [app total.add [[app total.add [[v 0] [v 1]]] [v 2]]]

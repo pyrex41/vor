@@ -39,7 +39,7 @@ the executable body. For multiple input sorts, quantifiers wrap in reverse input
 order so the body retains the declared input-index order.
 
 `vor.construction-root-inventory` records the additional construction rules and
-side conditions. `make test-construction-mutations` exercises five independent
+side conditions. `make test-construction-mutations` exercises six independent
 mutants in disposable copies, leaving the working tree untouched.
 
 ## Reviewed construction rules

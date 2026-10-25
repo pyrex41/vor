@@ -20,3 +20,11 @@ jobs:
       - run: make bootstrap
       - run: make bootstrap-audit
       - run: make test-metatheory
+  mutations-and-demos:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - run: make bootstrap
+      - run: make test-construction-mutations
+      - run: make demo boundary-demo logic-demo program-demo admission-demo compiler-demo plan
