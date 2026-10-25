@@ -2,7 +2,9 @@
 \\ bytes as numeric inert data. Config functions are loaded before this entry.
 (set *vor-wire* (stoutput))
 (set *stoutput* (open "/dev/null" out))
-(load ".tools/t-star-pr117.shen")
+\\ The first argument is the launcher's private overlay copy, hashed from the
+\\ exact bytes written; the repository path is never loaded by name.
+(load (hd (tl (value *argv*))))
 (if (and (= (value *version*) "43.1")
         (and (= (value *implementation*) "chez-scheme")
              (and (= (arity shen.search-user-datatypes-h) 7)
@@ -35,7 +37,7 @@
         (/. E [unknown service-error]))
       (vor.service-write Id Result)))
 
-\\ argv[2] is a trusted config path selected by the launcher; argv[3] is a
+\\ The next arguments are a trusted config path selected by the launcher and a
 \\ hexadecimal transport value, never Shen source. Decode is deliberately
 \\ fixed and rejects malformed text before semantic checking.
 (define vor.service-hex
@@ -63,7 +65,7 @@
                 (vor.service-hex-valid? (tlstr Pair)))))))
 
 (define vor.service-main
-  [_ Config Hex] -> (if (vor.service-hex-valid? Hex)
+  [_ _ Config Hex] -> (if (vor.service-hex-valid? Hex)
     (do (load Config) (vor.service-request (vor.service-hex Hex [])))
     (simple-error "service hex"))
   _ -> (simple-error "service arguments"))

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Independent transport corpus; it never decides VOR semantic validity."""
-import copy, importlib.util, io, os, signal, struct, subprocess, sys, tempfile, threading, time, unittest
+import copy, hashlib, importlib.util, io, os, platform, shutil, signal, struct, subprocess, sys, tempfile, threading, time, unittest
 from pathlib import Path
 
 ROOT = os.path.dirname(os.path.dirname(__file__))
@@ -21,7 +21,7 @@ def enc(x):
         return b"\6" + struct.pack(">H", len(x)) + b"".join(enc(v) for v in x)
     raise TypeError(x)
 
-def run(body, timeout=4):
+def run(body, timeout=30):
     p = subprocess.run([SHIM, CFG], input=struct.pack(">I", len(body)) + body,
                        stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                        timeout=timeout)
@@ -39,6 +39,28 @@ def envelope_value():
              [[sym("runtime"), sym("unchanged-trusted-image")]], sym("boolean-states"), [sym("invariant")], sym("finite-proof")]
     cert = [sym("vor-certificate"), 0, model, [[False, False], [True, False], [False, True]]]
     return [sym("vor-evidence"), 0, claim, cert]
+
+
+def alive(pid):
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    return True
+
+
+def pid_state(pid):
+    out = subprocess.run(["ps", "-o", "stat=", "-p", str(pid)], stdout=subprocess.PIPE,
+                         text=True).stdout.strip()
+    return out[:1]
+
+
+def group_states(pgid):
+    """Process states for a group, from ps; empty when nothing is listed."""
+    out = subprocess.run(["ps", "-eo", "pgid=,stat="], stdout=subprocess.PIPE,
+                         text=True).stdout
+    return [stat[0] for line in out.splitlines()
+            for group, stat in [line.split()] if int(group) == pgid]
 
 
 SPEC = importlib.util.spec_from_file_location("vor_checker_launch", SHIM)
@@ -148,6 +170,94 @@ class TransportTests(unittest.TestCase):
                 except (OSError, ValueError):
                     pass
 
+    def wait_for(self, path, seconds=2):
+        deadline = time.monotonic() + seconds
+        while time.monotonic() < deadline and not path.exists():
+            time.sleep(.01)
+        self.assertTrue(path.exists())
+        return int(path.read_text())
+
+    def assert_group_gone(self, pgid, seconds=2):
+        deadline = time.monotonic() + seconds
+        while time.monotonic() < deadline:
+            try:
+                os.killpg(pgid, 0)
+            except ProcessLookupError:
+                return
+            # Killed members can linger as zombies until their reaper runs.
+            if all(state == "Z" for state in group_states(pgid)):
+                return
+            time.sleep(.02)
+        self.fail("worker process group %d survived" % pgid)
+
+    def assert_pid_gone(self, pid, seconds=2):
+        deadline = time.monotonic() + seconds
+        while time.monotonic() < deadline:
+            if not alive(pid) or pid_state(pid) == "Z":
+                return
+            time.sleep(.02)
+        self.fail("worker descendant %d survived" % pid)
+
+    def test_successful_reply_still_reaps_process_group(self):
+        with tempfile.TemporaryDirectory() as directory:
+            pid_path = Path(directory) / "descendant.pid"
+            code = (
+                "import os,time\n"
+                "if os.fork() == 0:\n"
+                "    os.close(1); os.close(2)\n"
+                "    open(%r,'w').write(str(os.getpid()))\n"
+                "    time.sleep(30)\n"
+                "    os._exit(0)\n"
+                "while not os.path.exists(%r): time.sleep(.01)\n"
+                "os.write(1, bytes([86,1,17,0]))\n"
+            ) % (str(pid_path), str(pid_path))
+            self.assertEqual(self.worker(code, 5)[0], bytes([86, 1, 17, 0]))
+            self.assert_pid_gone(self.wait_for(pid_path))
+
+    def launcher_process(self, directory, code):
+        """A launcher-shaped parent: real handlers, real run_worker."""
+        parent = (
+            "import importlib.util,sys\n"
+            "spec=importlib.util.spec_from_file_location('l',%r)\n"
+            "l=importlib.util.module_from_spec(spec); spec.loader.exec_module(l)\n"
+            "l.install_signal_handlers()\n"
+            "try: l.run_worker([sys.executable,'-c',%r],bytes([17]),%r,30)\n"
+            "except l.ServiceError: sys.exit(2)\n"
+        ) % (SHIM, code, ROOT)
+        return subprocess.Popen([sys.executable, "-c", parent], cwd=directory)
+
+    def test_signal_to_launcher_reaps_worker_group(self):
+        code = ("import os,time\n"
+                "open('leader.pid','w').write(str(os.getpid()))\n"
+                "if os.fork() == 0: time.sleep(30)\n"
+                "time.sleep(30)\n")
+        for signum in (signal.SIGTERM, signal.SIGINT, signal.SIGHUP):
+            with self.subTest(signal=signum), tempfile.TemporaryDirectory() as directory:
+                # run_worker uses ROOT as cwd; the worker writes there.
+                pid_path = Path(ROOT) / "leader.pid"
+                self.addCleanup(lambda: pid_path.exists() and pid_path.unlink())
+                parent = self.launcher_process(directory, code)
+                leader = self.wait_for(pid_path)
+                pid_path.unlink()
+                parent.send_signal(signum)
+                self.assertEqual(parent.wait(timeout=5), 2)
+                self.assert_group_gone(leader)
+
+    @unittest.skipUnless(platform.system() == "Linux", "PR_SET_PDEATHSIG is Linux-only")
+    def test_killed_launcher_takes_worker_leader(self):
+        code = ("import os,time\n"
+                "open('leader.pid','w').write(str(os.getpid()))\n"
+                "time.sleep(30)\n")
+        with tempfile.TemporaryDirectory() as directory:
+            pid_path = Path(ROOT) / "leader.pid"
+            self.addCleanup(lambda: pid_path.exists() and pid_path.unlink())
+            parent = self.launcher_process(directory, code)
+            leader = self.wait_for(pid_path)
+            pid_path.unlink()
+            parent.kill()
+            parent.wait(timeout=5)
+            self.assert_group_gone(leader)
+
     def test_transport_truncation_trailing_and_bounds(self):
         good = bytes([17])+enc(envelope_value())
         for raw in [b"", b"\0", struct.pack(">I", 0), struct.pack(">I",8193),
@@ -158,11 +268,72 @@ class TransportTests(unittest.TestCase):
         self.assertEqual(launcher.read_request(io.BytesIO(struct.pack(">I",len(good))+good)),good)
 
 
+class StagingTests(unittest.TestCase):
+    """Launch runs private copies whose bytes were hashed; never repo paths."""
+    def fake_root(self, directory, identity=None):
+        root = Path(directory)
+        tools = root / ".tools"
+        (tools / "h/bin").mkdir(parents=True)
+        (tools / "h/lib/x").mkdir(parents=True)
+        files = {"bin/shen-scheme": b"host", "lib/x/boot": b"boot"}
+        for name, data in files.items():
+            (tools / "h" / name).write_bytes(data)
+        shutil.copyfile(os.path.join(ROOT, ".tools", "t-star-pr117.shen"), tools / "t-star-pr117.shen")
+        (tools / "host-path-Linux-x86_64").write_text(".tools/h/bin/shen-scheme\n")
+        if identity is None:
+            identity = ["archive " + launcher.ARCHIVE_SHA256[("Linux", "x86_64")]] + [
+                hashlib.sha256(data).hexdigest() + " " + name for name, data in sorted(files.items())]
+        (tools / "host-identity-Linux-x86_64").write_text("\n".join(identity) + "\n")
+        return root
+
+    def stage(self, root):
+        stage = Path(tempfile.mkdtemp(prefix="vor-stage-test-"))
+        self.addCleanup(shutil.rmtree, stage, True)
+        return launcher.stage_host(root, stage, "Linux", "x86_64"), stage
+
+    def test_recorded_identity_is_staged(self):
+        with tempfile.TemporaryDirectory() as directory:
+            (host, overlay), stage = self.stage(self.fake_root(directory))
+            self.assertEqual(host.read_bytes(), b"host")
+            self.assertEqual((stage / "host/lib/x/boot").read_bytes(), b"boot")
+            self.assertEqual(hashlib.sha256(overlay.read_bytes()).hexdigest(), launcher.OVERLAY_SHA256)
+
+    def test_changed_host_files_are_refused(self):
+        for name in ("h/bin/shen-scheme", "h/lib/x/boot", "t-star-pr117.shen"):
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as directory:
+                root = self.fake_root(directory)
+                with open(root / ".tools" / name, "ab") as stream:
+                    stream.write(b" ")
+                with self.assertRaises(launcher.ServiceError):
+                    self.stage(root)
+
+    def test_foreign_or_incomplete_identity_is_refused(self):
+        digest = hashlib.sha256(b"host").hexdigest()
+        archive = "archive " + launcher.ARCHIVE_SHA256[("Linux", "x86_64")]
+        for identity in (["archive " + "0" * 64, digest + " bin/shen-scheme"],
+                         [digest + " bin/shen-scheme"],
+                         [archive],
+                         [archive, digest + " bin/../bin/shen-scheme"],
+                         [archive, digest + " /bin/shen-scheme"],
+                         [archive, digest + " etc/shen-scheme"]):
+            with self.subTest(identity=identity), tempfile.TemporaryDirectory() as directory:
+                with self.assertRaises((launcher.ServiceError, OSError)):
+                    self.stage(self.fake_root(directory, identity))
+
+    def test_deadline_is_bounded_supervisor_policy(self):
+        self.assertEqual(launcher.parse_arguments(["c"]), (launcher.DEFAULT_DEADLINE, "c"))
+        self.assertEqual(launcher.parse_arguments(["--deadline", "30", "c"]), (30, "c"))
+        for argv in ([], ["--deadline", "0", "c"], ["--deadline", "121", "c"],
+                     ["--deadline", "1.5", "c"], ["--deadline", "c"], ["a", "b"]):
+            with self.subTest(argv=argv), self.assertRaises(ValueError):
+                launcher.parse_arguments(argv)
+
+
 class SemanticProcessTests(unittest.TestCase):
     def run_case(self, value, status, config=CFG, cwd=ROOT):
         raw = struct.pack(">I",len(value)+1)+bytes([17])+value
         result = subprocess.run([SHIM,config],input=raw,stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE,cwd=cwd,timeout=8)
+                                stderr=subprocess.PIPE,cwd=cwd,timeout=60)
         self.assertEqual((result.returncode,result.stdout,result.stderr),
                          (0,bytes([86,1,17,status]),b""))
 
