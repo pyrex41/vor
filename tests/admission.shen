@@ -264,3 +264,23 @@
     (admission-demo.contracts) (admission-demo.construction)
     (admission-demo.right-succ) (admission-demo.right-succ-proof) 2000)
   [accepted constructed-theorem])
+
+\\ `[C]` runs to a one-element list, never the nullary value C. Admitting it as
+\\ C would bind a theorem to a value the exact source never returns.
+(define admit-test.nullary-source
+  -> [shen-source 0 [[define admit-test.nullary zero -> [cons zero []]
+       [cons succ [cons (intern "N") []]] -> zero]]])
+(define admit-test.nullary-contracts
+  -> [[contract admit-test.nullary [natural] natural 0 [equal natural [v 0] [app zero []]]]])
+(define admit-test.nullary-signature
+  -> [fol-signature 1 [] (vor.contract-functions (admit-test.nullary-contracts)) [] (vor.standard-data)])
+(define admit-test.nullary-program -> (admission-demo.normalized (vor.normalize (admit-test.nullary-source))))
+(test.equal admission-no-singleton-as-nullary
+  (vor.construct-check (admit-test.nullary-program) (admit-test.nullary-signature)
+    (admit-test.nullary-contracts)
+    (vor.construct (admit-test.nullary-program) (admit-test.nullary-signature)
+      (admit-test.nullary-contracts)))
+  [rejected constructor-representation])
+(test.equal admission-singleton-runs-to-list
+  (hd (tl (vor.run (admit-test.nullary-program) admit-test.nullary [zero] 100)))
+  [value [zero]])

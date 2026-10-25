@@ -78,7 +78,10 @@
 (define vor.admit-local
   [found [T S]] -> [typed T S]
   _ -> [rejected construction-local])
+\\ A cons spine always has at least one field. `[C]` evaluates to a one-element
+\\ list, not the nullary value C, so an empty spine is never C.
 (define vor.admit-ctor-list
+  _ _ _ _ _ _ [expressions []] -> [rejected constructor-representation]
   Sig V Env Context C Ps [expressions Es] ->
     (vor.admit-ctor Sig V Env Context C Es Ps (vor.algebra-constructor C Sig))
   _ _ _ _ _ _ _ -> [rejected constructor-representation])

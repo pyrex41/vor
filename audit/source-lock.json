@@ -5,7 +5,7 @@
     "kernel/proof.shen": "7a937f7f76cf187008daa1202a646fc98614c0c49522f1861ecdb4169699dfc7",
     "spec/logic.shen": "c5403dcdc73a8e476fd9f0202e464e910d4fc60f11eeae29a3a92b01845dea5b",
     "proofs/induction.shen": "8a96eece33bdaabd713bc0076722d6196312c906aa1c95ed55a6b2d2189cdd2f",
-    "kernel/admit.shen": "9d1288d4275353d268a21b33c82aaf42dd7419427815e6512ed91fd3036d37ce",
+    "kernel/admit.shen": "71c70513be156bfef60868ac83f7f1ebe6584909b11e3e80ebe58cd3bad77e07",
     "spec/contracts.shen": "a941f64693bf9e7485a6bbcdba1e53a2e9e6c8c40854af789c619b6457485da4",
     "spec/program.shen": "df456fc5a9ef6dfd75f68f23e5139e1fc2087a25856f4649695abff235b2db17",
     "spec/evaluation.shen": "e1c97d4c3cfe8ca73e4e0a5307537e469841cb519589b59f2a78bf7ae7334fd7",
