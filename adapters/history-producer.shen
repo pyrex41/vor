@@ -120,7 +120,7 @@
     [ok W2 (or (= Response deny) false)]
   [next deny _] World applied _ -> [ok World true]
   [next allow W2] World not-applied Response ->
-    [ok World true]
+    [ok World (or (= Response allow) (= Response deny))]
   [next deny _] World not-applied Response -> [ok World (= Response allow)]
   [unknown Reason] _ _ _ -> [unknown Reason]
   [rejected Reason] _ _ _ -> [unknown Reason]
