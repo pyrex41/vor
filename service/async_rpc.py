@@ -318,9 +318,11 @@ def main():
     if not .1 <= args.timeout <= 30:
         parser.error("timeout must be .1..30 seconds")
     root = Path(__file__).resolve().parent.parent
-    config = args.config.resolve(strict=True)
     worker = None
     try:
+        if args.config.is_symlink() or not args.config.is_file():
+            raise ProtocolError("configuration must be a regular file")
+        config = args.config.resolve(strict=True)
         if hashlib.sha256((root / ".tools/t-star-pr117.shen").read_bytes()).hexdigest() != OVERLAY_SHA256:
             raise ProtocolError("kernel overlay")
         host = Path((root / ".tools" / ("host-path-" + platform.system() + "-" + platform.machine())).read_text().strip())

@@ -25,6 +25,21 @@ def request(payload=b"\0", request_id="q", nonce=7, source="source", kind=3):
 
 
 class WireTests(unittest.TestCase):
+    def test_configuration_symlink_is_rejected_before_runtime_start(self):
+        with tempfile.TemporaryDirectory() as directory:
+            actual = Path(directory) / "actual.shen"
+            actual.write_text('(simple-error "must never load")')
+            link = Path(directory) / "config.shen"
+            link.symlink_to(actual)
+            command = [sys.executable, str(ROOT / "service/async_rpc.py"),
+                       "--config", str(link), "--source-id", "x",
+                       "--config-sha256", rpc.file_identity(actual), "--host-sha256", "x",
+                       "--runtime-root", directory, "--runtime-sha256", "x",
+                       "--model-id", "model", "--adapter-id", "adapter"]
+            result = subprocess.run(command, input=b"", capture_output=True, timeout=3)
+            self.assertEqual(result.returncode, 2)
+            self.assertEqual(result.stdout, b"")
+
     def test_exact_echo_and_four_statuses(self):
         body = request()
         ids, nonce, limits, payload, binding, kind = rpc.decode_request(body)
