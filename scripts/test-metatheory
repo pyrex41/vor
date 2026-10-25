@@ -15,7 +15,7 @@ OUT = ROOT / "build/audit"
 PROOFS = OUT / "rocq"
 MODULES = ["Checker", "Propositional", "Runtime", "Admission", "Compiler", "Validation", "CEK", "Certificates", "NativeLookup", "NativeCapture",
            "FirstOrderSyntax", "FirstOrderSemantics", "FirstOrderKernel", "FirstOrderEncoding",
-           "FirstOrderRaw", "LookupBridge", "FirstOrderCases", "Assumptions"]
+           "FirstOrderRaw", "LookupBridge", "FirstOrderCases", "ShenCheckMapperCapture", "Assumptions"]
 
 
 def run(cmd, env=None):
@@ -60,6 +60,15 @@ def main():
     fixture = OUT / "fixtures.bin"
     print(run([sys.executable, "audit/render_certificates.py", str(fixture), str(PROOFS / "Certificates.v")], env), end="")
     run([str(ROOT / "scripts/shen"), "-l", "audit/export-native.shen"], env)
+    run([str(ROOT / "scripts/shen"), "-l", "audit/export-shencheck.shen"], env)
+    mapper_generated = OUT / "ShenCheckMapperCapture.generated.v"
+    run([sys.executable, "audit/render_shencheck_mapper.py",
+         str(OUT / "shencheck-mapper.bin"), str(mapper_generated)], env)
+    versioned_mapper = (ROOT / "audit/rocq/ShenCheckMapperCapture.v").read_text()
+    generated_mapper = mapper_generated.read_text()
+    marker = "(* MAPPER_PROOF_BEGIN *)"
+    if marker not in versioned_mapper or generated_mapper != versioned_mapper.split(marker, 1)[0]:
+        raise SystemExit("ShenCheck mapper capture drifted; regenerate and review audit/rocq/ShenCheckMapperCapture.v.")
     run([str(ROOT / "scripts/shen"), "-l", "audit/export-first-order.shen"], env)
     run([sys.executable, "audit/render_native_lookup.py", str(OUT / "native-lookup.bin"), str(PROOFS / "NativeCapture.v")], env)
     print(run([sys.executable, "audit/render_first_order.py", str(OUT / "first-order.bin"), str(PROOFS / "FirstOrderCases.v")], env), end="")
@@ -71,7 +80,8 @@ def main():
     assumptions = ""
     for module in MODULES:
         assumptions += run([coqc, "-q", "-Q", str(PROOFS), "VorAudit", str(PROOFS / (module + ".v"))], env)
-    if "Axioms:" in assumptions or assumptions.count("Closed under the global context") != 46:
+    expected_assumption_checks = 52
+    if "Axioms:" in assumptions or assumptions.count("Closed under the global context") != expected_assumption_checks:
         raise SystemExit("Unexpected theorem assumptions:\n" + assumptions)
     (OUT / "assumptions.txt").write_text(assumptions)
     # Negative certificates are reified independently of the Shen validator.
@@ -159,6 +169,8 @@ def main():
               "source_lock_sha256": hashlib.sha256((ROOT / "audit/source-lock.json").read_bytes()).hexdigest(),
               "scope": "20-rule many-sorted soundness, raw binding refinement, captured native lookup/model correspondence. Full source, algebra extensions and backend correspondence remain explicit obligations."}
     (OUT / "report.json").write_text(json.dumps(report, indent=2) + "\n")
-    print("Metatheory: 46 named theorem checks without global postulates; 18 modules kernel-rechecked.")
+    named_checks = assumptions.count("Closed under the global context")
+    mapper_digest = hashlib.sha256((OUT / "shencheck-mapper.bin").read_bytes()).hexdigest()
+    print(f"Metatheory: {named_checks} named theorem checks without global postulates; {len(MODULES)} modules kernel-rechecked; mapper capture {mapper_digest}; mapper output theorems 9.")
 
 if __name__ == "__main__": main()

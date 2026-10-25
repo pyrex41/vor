@@ -1,4 +1,4 @@
-From VorAudit Require Import Checker Propositional Runtime Admission Compiler Validation CEK FirstOrderSyntax FirstOrderSemantics FirstOrderKernel FirstOrderEncoding FirstOrderRaw NativeLookup NativeCapture LookupBridge.
+From VorAudit Require Import Checker Propositional Runtime Admission Compiler Validation CEK FirstOrderSyntax FirstOrderSemantics FirstOrderKernel FirstOrderEncoding FirstOrderRaw NativeLookup NativeCapture LookupBridge ShenCheckMapperCapture.
 Print Assumptions check_derivation.
 Print Assumptions check_sound.
 Print Assumptions check_remainder.
@@ -45,3 +45,9 @@ Print Assumptions NativeCapture.actual_lookup_all_outcomes.
 Print Assumptions LookupBridge.native_variable_lookup_correspondence.
 Print Assumptions LookupBridge.native_variable_lookup_all_outcomes.
 Print Assumptions LookupBridge.native_variable_found_iff.
+Print Assumptions shencheck_mapper_capture_shape.
+Print Assumptions shencheck_mapper_deterministic.
+Print Assumptions shencheck_mapper_applied_eval.
+Print Assumptions shencheck_mapper_not_applied_eval.
+Print Assumptions shencheck_mapper_unknown_eval.
+Print Assumptions shencheck_mapper_output_spec.
