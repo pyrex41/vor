@@ -35,6 +35,22 @@
   [] -> true
   [E | Es] -> (and (fj.hp-effect? E) (fj.hp-effects? Es))
   _ -> false)
+(define fj.hp-op-preds-valid?
+  _ _ [] -> true
+  Ops Id [P | Ps] -> (and (not (= P Id))
+                         (and (fj.hp-member? P (fj.hp-ids Ops))
+                              (fj.hp-op-preds-valid? Ops Id Ps)))
+  _ _ _ -> false)
+(define fj.hp-ops-valid?
+  _ [] -> true
+  Ops [[fj-op Id _ Preds _ _] | Os] ->
+    (and (fj.hp-op-preds-valid? Ops Id Preds) (fj.hp-ops-valid? Ops Os))
+  _ _ -> false)
+(define fj.hp-observations-valid?
+  _ [] -> true
+  Ids [[fj-effect Id _] | Es] ->
+    (and (fj.hp-member? Id Ids) (fj.hp-observations-valid? Ids Es))
+  _ _ -> false)
 (define fj.hp-ids
   [] -> []
   [[fj-op Id _ _ _ _] | Os] -> [Id | (fj.hp-ids Os)])
@@ -62,6 +78,16 @@
     (if (fj.hp-eligible? O Remaining)
         [O | (fj.hp-eligible Os Remaining)]
         (fj.hp-eligible Os Remaining)))
+(define fj.hp-remove-eligible-ids
+  [] Remaining -> Remaining
+  [O | Os] Remaining ->
+    (fj.hp-remove-eligible-ids Os (fj.hp-remove (fj.hp-op-id O) Remaining)))
+(define fj.hp-acyclic?
+  Ops [] -> true
+  Ops Remaining ->
+    (let Ready (fj.hp-eligible Ops Remaining)
+      (if (= Ready []) false
+          (fj.hp-acyclic? Ops (fj.hp-remove-eligible-ids Ready Remaining)))))
 
 (define fj.hp-branches
   Effect Obs Id -> (fj.hp-filter-branches (fj.hp-effect-branches Effect) (fj.hp-observation Id Obs)))
@@ -94,8 +120,8 @@
     [ok W2 (or (= Response deny) false)]
   [next deny _] World applied _ -> [ok World true]
   [next allow W2] World not-applied Response ->
-    [ok World (= Response deny)]
-  [next deny _] World not-applied _ -> [ok World false]
+    [ok World true]
+  [next deny _] World not-applied Response -> [ok World (= Response allow)]
   [unknown Reason] _ _ _ -> [unknown Reason]
   [rejected Reason] _ _ _ -> [unknown Reason]
   _ _ _ _ -> [unknown malformed-transition])
@@ -138,12 +164,13 @@
   [unknown Reason] _ _ _ _ _ _ _ _ _ _ _ _ _ -> [unknown Reason]
   [ok World2 Bad2] Branch O Node Ops Obs Nodes Queue Edges NextId EdgeCount NodeLimit Limit Bs ->
     (let Remaining2 (fj.hp-remove (fj.hp-op-id O) (fj.hp-node-remaining Node))
-         Key [World2 (fj.hp-node-remaining [fj-node 0 World2 Remaining2 Bad2]) Bad2]
+         StickyBad (or (fj.hp-node-bad Node) Bad2)
+         Key [World2 Remaining2 StickyBad]
          Found (fj.hp-find-node Key Nodes)
          From (fj.hp-node-id Node)
          (if (= Found missing)
              (if (>= NextId NodeLimit) [unknown node-budget]
-               (let New [fj-node NextId World2 Remaining2 Bad2]
+               (let New [fj-node NextId World2 Remaining2 StickyBad]
                     NNodes (append Nodes [New]) NQueue (append Queue [New])
                  (fj.hp-expand-branches Bs O Node Ops Obs NNodes NQueue
                    (fj.hp-add-edge From NextId (fj.hp-op-id O) Branch Edges)
@@ -154,13 +181,10 @@
 (define fj.hp-node-id [fj-node Id _ _ _] -> Id)
 
 (define fj.hp-run
-  [] _ _ Nodes Edges NextId EdgeCount EdgeLimit _ ->
-    (if (>= EdgeCount EdgeLimit) [unknown transition-budget]
-        [produced Nodes Edges NextId EdgeCount])
+  [] _ _ Nodes Edges NextId EdgeCount _ _ -> [produced Nodes Edges NextId EdgeCount]
   [Node | Queue] Ops Obs Nodes Edges NextId EdgeCount NodeLimit EdgeLimit ->
-    (if (>= EdgeCount EdgeLimit) [unknown transition-budget]
-      (let R (fj.hp-expand Node Ops Obs Nodes Queue Edges NextId EdgeCount NodeLimit EdgeLimit)
-        (fj.hp-run-result R Ops Obs NodeLimit EdgeLimit))))
+    (let R (fj.hp-expand Node Ops Obs Nodes Queue Edges NextId EdgeCount NodeLimit EdgeLimit)
+      (fj.hp-run-result R Ops Obs NodeLimit EdgeLimit)))
 (define fj.hp-run-result
   [unknown Reason] _ _ _ _ -> [unknown Reason]
   [ok Nodes Queue Edges NextId EdgeCount] Ops Obs NodeLimit EdgeLimit ->
@@ -169,11 +193,8 @@
 
 (define fj.produce
   [fj-history 0 Ops Obs FinalFacts] NodeLimit EdgeLimit ->
-    (if (and (integer? NodeLimit) (and (>= NodeLimit 1) (and (<= NodeLimit 512)
-      (and (integer? EdgeLimit) (and (>= EdgeLimit 1) (<= EdgeLimit 100000))))))
-      (if (and (fj.hp-ops? Ops) (and (fj.hp-unique-ids? (fj.hp-ids Ops))
-            (and (fj.hp-effects? Obs)
-              (fj.hp-start Ops Obs FinalFacts NodeLimit EdgeLimit))))
+    (if (fj.hp-budget-valid? NodeLimit EdgeLimit)
+      (if (fj.hp-valid? Ops Obs FinalFacts)
           (fj.hp-start-result (fj.hp-run
             [[fj-node 0 (fj.initial) (fj.hp-ids Ops) false]] Ops Obs
             [[fj-node 0 (fj.initial) (fj.hp-ids Ops) false]] [] 1 0 NodeLimit EdgeLimit)
@@ -181,8 +202,25 @@
           [rejected malformed-history])
       [rejected invalid-budget])
   _ _ _ -> [rejected malformed-history])
+(define fj.hp-budget-valid?
+  NodeLimit EdgeLimit ->
+    (and (integer? NodeLimit) (and (>= NodeLimit 1) (and (<= NodeLimit 512)
+      (and (integer? EdgeLimit) (and (>= EdgeLimit 1) (<= EdgeLimit 100000)))))))
+(define fj.hp-valid?
+  Ops Obs _ ->
+    (and (fj.hp-ops? Ops)
+      (and (<= (length Ops) 32)
+        (and (fj.hp-unique-ids? (fj.hp-ids Ops))
+          (and (fj.hp-ops-valid? Ops Ops)
+            (and (fj.hp-acyclic? Ops (fj.hp-ids Ops))
+              (and (fj.hp-effects? Obs)
+                (and (fj.hp-unique-ids? (fj.hp-observation-ids Obs))
+                  (fj.hp-observations-valid? (fj.hp-ids Ops) Obs)))))))))
 (define fj.hp-start
   _ _ _ _ _ -> true)
+(define fj.hp-observation-ids
+  [] -> []
+  [[fj-effect Id _] | Es] -> [Id | (fj.hp-observation-ids Es)])
 (define fj.hp-start-result
   [produced Nodes Edges _ _] History ->
     [produced [fj-evidence 0 History [fj-dag 2 Nodes (reverse Edges) 0]]]
