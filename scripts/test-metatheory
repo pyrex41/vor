@@ -8,11 +8,14 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
+import time
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "build/audit"
 PROOFS = OUT / "rocq"
-MODULES = ["Checker", "Propositional", "Runtime", "Admission", "Compiler", "Validation", "CEK", "Certificates", "Assumptions"]
+MODULES = ["Checker", "Propositional", "Runtime", "Admission", "Compiler", "Validation", "CEK", "Certificates", "NativeLookup", "NativeCapture",
+           "FirstOrderSyntax", "FirstOrderSemantics", "FirstOrderKernel", "FirstOrderEncoding",
+           "FirstOrderRaw", "LookupBridge", "FirstOrderCases", "Assumptions"]
 
 
 def run(cmd, env=None):
@@ -24,6 +27,13 @@ def run(cmd, env=None):
 
 
 def main():
+    OUT.mkdir(parents=True, exist_ok=True)
+    previous = OUT / "previous" / str(time.time_ns())
+    for filename in ["fixtures.bin", "native-lookup.bin", "first-order.bin", "report.json", "assumptions.txt", "coqchk.txt"]:
+        path = OUT / filename
+        if path.exists():
+            previous.mkdir(parents=True, exist_ok=True)
+            path.rename(previous / filename)
     env = os.environ.copy()
     local = ROOT / ".tools/rocq-root"
     coqc = env.get("COQC") or shutil.which("coqc")
@@ -49,13 +59,19 @@ def main():
     run([str(ROOT / "scripts/shen"), "-l", "audit/export.shen"], env)
     fixture = OUT / "fixtures.bin"
     print(run([sys.executable, "audit/render_certificates.py", str(fixture), str(PROOFS / "Certificates.v")], env), end="")
+    run([str(ROOT / "scripts/shen"), "-l", "audit/export-native.shen"], env)
+    run([str(ROOT / "scripts/shen"), "-l", "audit/export-first-order.shen"], env)
+    run([sys.executable, "audit/render_native_lookup.py", str(OUT / "native-lookup.bin"), str(PROOFS / "NativeCapture.v")], env)
+    print(run([sys.executable, "audit/render_first_order.py", str(OUT / "first-order.bin"), str(PROOFS / "FirstOrderCases.v")], env), end="")
+    if (PROOFS / "NativeCapture.v").read_text() != (ROOT / "audit/rocq/NativeCapture.v").read_text():
+        raise SystemExit("Native KLambda capture drifted; regenerate and review audit/rocq/NativeCapture.v.")
     print(run([sys.executable, "-m", "unittest", "discover", "-s", "audit", "-p", "test_*.py"], env), end="")
     if (PROOFS / "Certificates.v").read_text() != (ROOT / "audit/rocq/Certificates.v").read_text():
         raise SystemExit("Symbolic-body certificates drifted; regenerate and review audit/rocq/Certificates.v.")
     assumptions = ""
     for module in MODULES:
         assumptions += run([coqc, "-q", "-Q", str(PROOFS), "VorAudit", str(PROOFS / (module + ".v"))], env)
-    if "Axioms:" in assumptions or assumptions.count("Closed under the global context") != 20:
+    if "Axioms:" in assumptions or assumptions.count("Closed under the global context") != 46:
         raise SystemExit("Unexpected theorem assumptions:\n" + assumptions)
     (OUT / "assumptions.txt").write_text(assumptions)
     # Negative certificates are reified independently of the Shen validator.
@@ -95,13 +111,54 @@ def main():
         if result.returncode == 0 or "Unable to unify" not in result.stdout:
             raise SystemExit("Negative translation proof failed unexpectedly: " + name + "\n" + result.stdout)
     print("4 malformed symbolic-body translations rejected by the proof kernel.")
+    import render_native_lookup as native_reify
+    native = reify.decode((OUT / "native-lookup.bin").read_bytes())
+    native_mutants = []
+    swapped = copy.deepcopy(native)
+    swapped[2][2].reverse()
+    native_mutants.append(("native-swapped-parameters", swapped))
+    decrement = copy.deepcopy(native)
+    def replace_tree(tree, wanted, replacement):
+        if reify.same(tree, wanted): return replacement
+        if isinstance(tree, list): return [replace_tree(x, wanted, replacement) for x in tree]
+        return tree
+    decrement[2][3] = replace_tree(decrement[2][3],
+        [reify.Symbol("-"), native[2][2][1], 1], [reify.Symbol("-"), native[2][2][1], 2])
+    native_mutants.append(("native-wrong-decrement", decrement))
+    for name, data in native_mutants:
+        text = native_reify.render(encode(data))
+        target = PROOFS / ("Mutant_" + name.replace("-", "_") + ".v")
+        target.write_text(text)
+        result = subprocess.run([coqc, "-q", "-Q", str(PROOFS), "VorAudit", str(target)],
+                                cwd=ROOT, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        (OUT / (name + ".txt")).write_text(result.stdout)
+        if result.returncode == 0 or "Unable to unify" not in result.stdout:
+            raise SystemExit("Negative native proof failed unexpectedly: " + name + "\n" + result.stdout)
+    print("2 corrupted actual KLambda captures rejected by the proof kernel.")
+    # The retained theorem scripts must also reject capture/escape bugs in the
+    # formal implementation, not merely differences in serialized fixtures.
+    proof_mutants = [
+        ("FirstOrderSyntax", "rename_term S (s k)", "s k", "missing-replacement-lift"),
+        ("FirstOrderKernel", "G (s::v) (raised gamma 1) body e", "G (s::v) gamma body e", "unshifted-generalization")]
+    for module, old, new, name in proof_mutants:
+        text = (ROOT / "audit/rocq" / (module + ".v")).read_text()
+        if text.count(old) != 1: raise SystemExit("Mutation target drift: " + name)
+        target = PROOFS / ("Mutant_" + name.replace("-", "_") + ".v")
+        target.write_text(text.replace(old, new))
+        result = subprocess.run([coqc, "-q", "-Q", str(PROOFS), "VorAudit", str(target)],
+                                cwd=ROOT, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        (OUT / (name + ".txt")).write_text(result.stdout)
+        if result.returncode == 0 or "Error:" not in result.stdout or "Syntax error" in result.stdout:
+            raise SystemExit("Binding proof mutation escaped or failed syntactically: " + name)
+    print("2 capture/quantifier implementation mutants rejected by existing proofs.")
     checked = run([coqchk, "-silent", "-Q", str(PROOFS), "VorAudit"] + ["VorAudit." + m for m in MODULES], env)
     (OUT / "coqchk.txt").write_text(checked)
     report = {"coqc": version.strip(), "modules": MODULES, "axioms": [], "rejected_translation_mutants": len(mutations),
+              "rejected_native_mutants": len(native_mutants), "rejected_binding_mutants": len(proof_mutants),
               "fixture_sha256": hashlib.sha256(fixture.read_bytes()).hexdigest(),
               "source_lock_sha256": hashlib.sha256((ROOT / "audit/source-lock.json").read_bytes()).hexdigest(),
-              "scope": "Audit models and symbolic-body translation validation; Shen/source and CEK correspondence remain explicit obligations."}
+              "scope": "20-rule many-sorted soundness, raw binding refinement, captured native lookup/model correspondence. Full source, algebra extensions and backend correspondence remain explicit obligations."}
     (OUT / "report.json").write_text(json.dumps(report, indent=2) + "\n")
-    print("Metatheory: 20 assumption-free theorem checks; 9 modules kernel-rechecked.")
+    print("Metatheory: 46 named theorem checks without global postulates; 18 modules kernel-rechecked.")
 
 if __name__ == "__main__": main()

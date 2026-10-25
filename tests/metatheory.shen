@@ -124,3 +124,14 @@
   (vor.check-claim (test.root) (meta-test.compilation-claim)
     [vor-evidence 0 (meta-test.compilation-claim) [accepted compilation]] 1000)
   [rejected compilation-evidence-mismatch])
+(test.equal worklist-validates-generated-scope
+  (vor.fol-work (fol-test.signature)
+    [[goal [] [] [equal person [v 0] [v 0]] [refl]]] 10)
+  [rejected malformed-first-order-work-sequent])
+(test.equal worklist-zero-is-still-unknown
+  (vor.fol-work (fol-test.signature)
+    [[goal [] [] [equal person [v 0] [v 0]] [refl]]] 0)
+  [unknown proof-fuel])
+(test.equal native-lookup-large-index (vor.fol-at [a b c] 65535) missing)
+(test.equal native-lookup-preserves-inert-payload
+  (vor.fol-at [[load "never execute"] [false [a | b]] "text"] 1) [found [false [a | b]]])

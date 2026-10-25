@@ -2,7 +2,7 @@
   "format": 1,
   "meaning": "Reviewed source identity only; not a proof of source/model equivalence.",
   "sources": {
-    "kernel/proof.shen": "8d02b5bc96e1cf7b9be727179c70985a07c790baea83dce18d10c16ed351d692",
+    "kernel/proof.shen": "7a937f7f76cf187008daa1202a646fc98614c0c49522f1861ecdb4169699dfc7",
     "spec/logic.shen": "c5403dcdc73a8e476fd9f0202e464e910d4fc60f11eeae29a3a92b01845dea5b",
     "proofs/induction.shen": "8a96eece33bdaabd713bc0076722d6196312c906aa1c95ed55a6b2d2189cdd2f",
     "kernel/admit.shen": "9d1288d4275353d268a21b33c82aaf42dd7419427815e6512ed91fd3036d37ce",
@@ -17,6 +17,11 @@
     "spec/claims.shen": "a7a2c992953764195db10f0a4f73d53353d445aea5abcc31157b740597495dc2",
     "examples/admission.shen": "f6260cc94ac75f1a1002a059f127e5e03dda1e4c9bff4b9446356aceaaca9740",
     "construct/equality.shen": "f8ee2905aa4029606f56681e57e2005b1e7381fbd79719454a7b6e43af0bbab9",
-    "audit/rocq/Certificates.v": "bbb48b5f154a059d182ce4eed7efd2929ac0596f5a8c58d3571ddba99bbbb4b4"
+    "audit/rocq/Certificates.v": "bbb48b5f154a059d182ce4eed7efd2929ac0596f5a8c58d3571ddba99bbbb4b4",
+    "audit/export-native.shen": "b08479e7947f35a9a5b4716d6d83d20440268cc68f45541461f5254814fc15b9",
+    "audit/export-first-order.shen": "4bdd8c034a5d4d26cde1989eebcd35578fd8b678b4e1a6eb19d56c268dce67a4",
+    "audit/render_native_lookup.py": "22aa69cc1d7f47ff2fc114e8e92ac826572f97de07e7394c003c31fc0b44e014",
+    "audit/render_first_order.py": "e51d83ab1011b29d6c70fc7d206fc667f57d6f61cccb00e4f26df125248bf70e",
+    "audit/rocq/NativeCapture.v": "2f52002f86b81436159f73ca3c10d0934d2afe426e0821341fe58678707c0a0c"
   }
 }

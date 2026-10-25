@@ -146,6 +146,18 @@ budget. audit/rocq/Checker.v proves derivation construction, budget remainder an
 extension, and semantic soundness conditional on local expansion soundness.
 audit/rocq/Propositional.v proves all eleven quantifier-free constructive local
 rules and their checker soundness for arbitrary propositional interpretations.
-These are universal proofs, distinct from the finite reference corpus. The full
-sorted first-order/algebra rules and source/model correspondence remain open;
-see audit/README.md for the exact proven scope and remaining bridge requirements.
+These are universal proofs, distinct from the finite reference corpus. The
+next stage extends them to all twenty original sorted rules, as described below.
+The three user-algebra extension rules and complete source/model correspondence
+remain open; see audit/FIRST-ORDER-CORRESPONDENCE.md for the exact current boundary.
+
+
+The next audit stage now checks the complete original twenty-rule many-sorted
+first-order model, generic weakening/substitution semantics, and raw encoding/
+binding refinements. The actual captured KLambda body of vor.fol-at has a checked
+universal contract and a representation-parametric bridge to formal variable
+lookup. Every generated Shen work-list sequent is now formation-checked. See
+audit/FIRST-ORDER-CORRESPONDENCE.md for exact interfaces and validation. The three
+user-algebra extension rules, the remaining literal compiled helpers/dispatcher,
+construction/callee bridges and native backend preservation remain open. The
+46 named theorem checks are not a claim of full implementation/release closure.

@@ -147,11 +147,16 @@ soundness, the admission metatheorem, and host preservation remain open.
 ## Checked metatheory and translation validation
 
 An optional [Rocq/Coq audit](audit/README.md) checks universal soundness and
-preservation results for the scheduler, constructive propositional rules,
-finite-path checking, total construction calculus, stack compiler/validator and
+preservation results for the scheduler, all twenty original sorted first-order
+rules, finite-path checking, total construction calculus, stack compiler/validator and
 R05 expression CEK control. Generated certificates check the actual symbolic
 function bodies for every input environment. Run `make bootstrap-audit` and
 `make test-metatheory`; the normal Shen runtime has no Rocq dependency.
+
+The [first-order correspondence audit](audit/FIRST-ORDER-CORRESPONDENCE.md)
+also proves raw binder-operation refinements and a universal bridge from the
+actual captured KLambda lookup body to the formal variable lookup. The remaining
+compiled helpers and the three user-algebra extension rules are explicit gaps.
 
 Structurally decreasing self calls now allow other typed arguments to change,
 including accumulator reversal with a checked generic length contract. The
