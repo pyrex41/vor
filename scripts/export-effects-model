@@ -83,32 +83,48 @@ def _bounded_run(argv):
         return code, bytes(buffers[proc.stdout]), bytes(buffers[proc.stderr])
 
 def source_files():
-    roots = ["vor.shen", "scripts/shen", "scripts/export-effects-model", "scripts/effects-export-supervisor.py", "toolchain.lock.json", "examples/effects-protocol.shen", "Makefile", "tests/effects-protocol.shen"]
+    roots = ["vor.shen", "scripts/shen", "scripts/host.sh", "scripts/export-effects-model", "scripts/effects-export-supervisor.py", "toolchain.lock.json", "examples/effects-protocol.shen", "Makefile", "tests/effects-protocol.shen"]
     for directory in ("shen", "spec", "kernel", "proofs", "runtime", "construct"):
         roots.extend(str(p.relative_to(ROOT)) for p in (ROOT / directory).rglob("*.shen"))
     tools = ROOT / ".tools"
-    overlay = tools / "t-star-pr117.shen"
-    if overlay.is_file(): roots.append(str(overlay.relative_to(ROOT)))
-    active_path = tools / ("host-path-%s-%s" % (platform.system(), platform.machine()))
-    external_host = None
-    if active_path.is_file():
-        roots.append(str(active_path.relative_to(ROOT)))
-        host = Path(active_path.read_text().strip())
-        resolved_tools = tools.resolve()
-        if host.is_file() and host.resolve().is_relative_to(resolved_tools):
-            roots.append(".tools/" + str(host.resolve().relative_to(resolved_tools)))
-        elif host.is_file():
-            raise RuntimeError("selected host must reside under the trusted .tools runtime root")
-    files = {}
-    for rel in sorted(set(roots)):
-        if rel.startswith(".tools/"):
-            files[rel] = resolved_tools / rel[len(".tools/"):]
-        else: files[rel] = ROOT / rel
-    if external_host is not None: files["__external_runtime_host__"] = external_host
-    return files
+    resolved_tools = tools.resolve()
+    roots.append(".tools/t-star-pr117.shen")
+    platform_name = "%s-%s" % (platform.system(), platform.machine())
+    active_path = tools / ("host-path-" + platform_name)
+    identity_path = tools / ("host-identity-" + platform_name)
+    for path in (active_path, identity_path):
+        if not path.is_file() or path.stat().st_size > 65536:
+            raise RuntimeError("missing or excessive runtime identity; run make bootstrap")
+        roots.append(str(path.relative_to(ROOT)))
+    host = Path(active_path.read_text().strip())
+    if not host.is_absolute():
+        host = ROOT / host
+    if not host.is_file() or not host.resolve().is_relative_to(resolved_tools):
+        raise RuntimeError("selected host must reside under the trusted .tools runtime root")
+    host_root = host.parent.parent
+    entries = identity_path.read_text().splitlines()
+    if len(entries) > 96:
+        raise RuntimeError("excessive runtime identity manifest")
+    for entry in entries[1:]:
+        parts = entry.split()
+        if len(parts) != 2 or re.fullmatch(r"[0-9a-f]{64}", parts[0]) is None:
+            raise RuntimeError("invalid runtime identity entry")
+        relative = Path(parts[1])
+        if relative.is_absolute() or ".." in relative.parts or not relative.parts or relative.parts[0] not in ("bin", "lib"):
+            raise RuntimeError("invalid runtime identity path")
+        path = (host_root / relative).resolve()
+        if not path.is_relative_to(resolved_tools):
+            raise RuntimeError("runtime identity path escapes trusted tools")
+        roots.append(".tools/" + str(path.relative_to(resolved_tools)))
+    roots.append(".tools/" + str(host.resolve().relative_to(resolved_tools)))
+    return {rel: resolved_tools / rel[len(".tools/"):] if rel.startswith(".tools/") else ROOT / rel
+            for rel in sorted(set(roots))}
 
 def source_snapshot():
-    return {name: hashlib.sha256(path.read_bytes()).hexdigest() for name, path in source_files().items() if path.is_file()}
+    files = source_files()
+    if any(not path.is_file() for path in files.values()):
+        raise RuntimeError("missing source or runtime identity")
+    return {name: hashlib.sha256(path.read_bytes()).hexdigest() for name, path in files.items()}
 
 def main():
     ap=argparse.ArgumentParser(); ap.add_argument("--mode", choices=["healthy","mutant-commit","mutant-finish","mutant-duplicate","mutant-lost-work"], default="healthy"); ap.add_argument("--output", type=Path, required=True)

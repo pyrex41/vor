@@ -83,7 +83,11 @@ def stage_host(root, stage, system=None, machine=None):
     host = Path((root / ".tools" / ("host-path-" + suffix)).read_text().strip())
     if not host.is_absolute():
         host = root / host
+    tools_root = (root / ".tools").resolve()
+    host = host.resolve()
     host_root = host.parent.parent
+    if not host.is_relative_to(tools_root):
+        raise ServiceError("host path escapes trusted tools")
     lines = (root / ".tools" / ("host-identity-" + suffix)).read_text().splitlines()
     if archive is None or not lines or lines[0] != "archive " + archive:
         raise ServiceError("host identity mismatch")
@@ -94,7 +98,10 @@ def stage_host(root, stage, system=None, machine=None):
         if (not parts or parts[0] not in ("bin", "lib") or ".." in parts
                 or Path(name).is_absolute()):
             raise ServiceError("host identity mismatch")
-        stage_file(host_root / name, stage / "host" / name, digest)
+        source = (host_root / name).resolve()
+        if not source.is_relative_to(tools_root):
+            raise ServiceError("host identity path escapes trusted tools")
+        stage_file(source, stage / "host" / name, digest)
         staged.add(name)
     if "bin/shen-scheme" not in staged:
         raise ServiceError("host identity mismatch")

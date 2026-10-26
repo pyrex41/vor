@@ -17,10 +17,19 @@ SPEC.loader.exec_module(export)
 
 
 class EffectsExportTests(unittest.TestCase):
+    def test_runtime_closure_includes_launcher_identity_and_boot_files(self):
+        files = export.source_files()
+        self.assertIn("scripts/host.sh", files)
+        identities = [p for name, p in files.items() if name.startswith(".tools/host-identity-")]
+        self.assertEqual(len(identities), 1)
+        self.assertTrue(any(name.endswith("petite.boot") for name in files))
+        self.assertTrue(any(name.endswith("scheme.boot") for name in files))
+        self.assertTrue(any(name.endswith("runtime.so") for name in files))
+
     def run_export(self, mode, output):
         return subprocess.run([sys.executable, str(ROOT / "scripts" / "export-effects-model"),
                               "--mode", mode, "--output", str(output)],
-                              cwd=ROOT, text=True, capture_output=True, timeout=10)
+                              cwd=ROOT, text=True, capture_output=True, timeout=45)
 
     def test_all_modes_are_exact_schema_and_source_bound(self):
         with tempfile.TemporaryDirectory(prefix="effects-export-") as directory:

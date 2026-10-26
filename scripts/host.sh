@@ -40,7 +40,9 @@ vor_stage_host() {
   [ -f "$vor_host_path" ] && [ -f "$vor_identity" ] && [ -f .tools/t-star-pr117.shen ] || {
     echo 'Run make bootstrap first.' >&2; exit 2;
   }
-  root=$(dirname "$(dirname "$(cat "$vor_host_path")")")
+  vor_tools_root=$(cd .tools && pwd -P)
+  root=$(cd "$(dirname "$(dirname "$(cat "$vor_host_path")")")" && pwd -P)
+  case "$root/" in "$vor_tools_root/"*) ;; *) vor_refuse runtime-root ;; esac
   vor_stage=$(mktemp -d "${TMPDIR:-/tmp}/vor-host.XXXXXX")
   trap 'rm -rf "$vor_stage"' EXIT
   trap 'exit 129' HUP
@@ -51,6 +53,9 @@ vor_stage_host() {
   while read -r digest file; do
     case "$file" in bin/*|lib/*) ;; *) vor_refuse "$file" ;; esac
     case "$file" in *..*) vor_refuse "$file" ;; esac
+    [ ! -L "$root/$file" ] || vor_refuse "$file"
+    vor_source_dir=$(cd "$root/$(dirname "$file")" && pwd -P)
+    case "$vor_source_dir/" in "$vor_tools_root/"*) ;; *) vor_refuse "$file" ;; esac
     mkdir -p "$vor_stage/host/$(dirname "$file")"
     cp "$root/$file" "$vor_stage/host/$file"
     [ "$(vor_hash "$vor_stage/host/$file")" = "$digest" ] || vor_refuse "$file"

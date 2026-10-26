@@ -320,6 +320,24 @@ class StagingTests(unittest.TestCase):
                 with self.assertRaises((launcher.ServiceError, OSError)):
                     self.stage(self.fake_root(directory, identity))
 
+    def test_foreign_host_and_boot_symlink_are_refused(self):
+        for mode in ("host", "boot"):
+            with self.subTest(mode=mode), tempfile.TemporaryDirectory() as directory:
+                base = Path(directory)
+                root = self.fake_root(base / "repo")
+                foreign = base / "foreign"
+                (foreign / "bin").mkdir(parents=True)
+                (foreign / "bin/shen-scheme").write_bytes(b"host")
+                (foreign / "boot").write_bytes(b"boot")
+                if mode == "host":
+                    (root / ".tools/host-path-Linux-x86_64").write_text(str(foreign / "bin/shen-scheme"))
+                else:
+                    boot = root / ".tools/h/lib/x/boot"
+                    boot.unlink()
+                    boot.symlink_to(foreign / "boot")
+                with self.assertRaises(launcher.ServiceError):
+                    self.stage(root)
+
     def test_deadline_is_bounded_supervisor_policy(self):
         self.assertEqual(launcher.parse_arguments(["c"]), (launcher.DEFAULT_DEADLINE, "c"))
         self.assertEqual(launcher.parse_arguments(["--deadline", "30", "c"]), (30, "c"))
