@@ -62,9 +62,13 @@ class EffectsExportTests(unittest.TestCase):
         code, out, err = export._bounded_run(export.shen_command(expression, loads=()))
         self.assertEqual(code, 0, err)
         self.assertEqual(export.printed_value(out), expected)
+        # The limit is set after every model file loads, so a load cannot reset it.
+        command = export.shen_command("(effects.model)")
+        self.assertGreater(command.index("(set *maximum-print-sequence-size* 65536)"),
+                           len(command) - 1 - command[::-1].index("-l"))
 
     def test_parser_rejects_elided_sequences(self):
-        for value in ("[a b ... etc]", "[vor-model 0 [x ...]]"):
+        for value in ("[a b ... etc]", "[vor-model 0 [x ...]]", "[a | b]", '["a b"]', "[<1 2>]", "[#<procedure>]"):
             with self.subTest(value=value), self.assertRaises(ValueError):
                 export.parse_sexpr(value)
 

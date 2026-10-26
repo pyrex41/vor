@@ -22,6 +22,8 @@ def _parse_one(tokens, index, depth=0, nodes=None):
         if re.fullmatch(r"-?[0-9]+", value): value = int(value)
         elif value == "true": value = True
         elif value == "false": value = False
+        # Only VOR atoms; printed strings, vectors, closures and improper lists fail.
+        elif re.fullmatch(r"[A-Za-z][A-Za-z0-9_.-]*", value) is None: raise ValueError("non-VOR atom in model")
         return value, index + 1
     values=[]; index += 1
     while index < len(tokens) and tokens[index] != "]":
