@@ -83,7 +83,7 @@ def _bounded_run(argv):
         return code, bytes(buffers[proc.stdout]), bytes(buffers[proc.stderr])
 
 def source_files():
-    roots = ["vor.shen", "scripts/shen", "scripts/export-effects-model", "scripts/effects-export-supervisor.py", "toolchain.lock.json", "examples/effects-protocol.shen"]
+    roots = ["vor.shen", "scripts/shen", "scripts/export-effects-model", "scripts/effects-export-supervisor.py", "toolchain.lock.json", "examples/effects-protocol.shen", "Makefile", "tests/effects-protocol.shen"]
     for directory in ("shen", "spec", "kernel", "proofs", "runtime", "construct"):
         roots.extend(str(p.relative_to(ROOT)) for p in (ROOT / directory).rglob("*.shen"))
     tools = ROOT / ".tools"
@@ -98,7 +98,7 @@ def source_files():
         if host.is_file() and host.resolve().is_relative_to(resolved_tools):
             roots.append(".tools/" + str(host.resolve().relative_to(resolved_tools)))
         elif host.is_file():
-            external_host = host.resolve()
+            raise RuntimeError("selected host must reside under the trusted .tools runtime root")
     files = {}
     for rel in sorted(set(roots)):
         if rel.startswith(".tools/"):
