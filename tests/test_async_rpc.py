@@ -99,9 +99,18 @@ class WireTests(unittest.TestCase):
             marker = Path(directory) / "escaped"
             started = Path(directory) / "started"
             worker_code = f"from pathlib import Path;import time;Path({str(started)!r}).touch();time.sleep(.5);Path({str(marker)!r}).touch();time.sleep(3)"
-            parent_code = "import os,subprocess,sys,time;r,w=os.pipe();subprocess.Popen([sys.executable,sys.argv[1],str(os.getpid()),str(w),sys.executable,'-c',sys.argv[2]],pass_fds=(w,),start_new_session=True);os.close(w);time.sleep(.2);os._exit(0)"
-            parent = subprocess.Popen([sys.executable, "-c", parent_code, str(ROOT / "service/async_guard.py"), worker_code], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            parent.wait(timeout=3)
+            parent_code = (
+                "import os,subprocess,sys,time\n"
+                "from pathlib import Path\n"
+                "r,w=os.pipe()\n"
+                "subprocess.Popen([sys.executable,sys.argv[1],str(os.getpid()),str(w),sys.executable,'-c',sys.argv[2]],pass_fds=(w,),start_new_session=True)\n"
+                "os.close(w)\n"
+                "deadline=time.monotonic()+5\n"
+                "while not Path(sys.argv[3]).exists() and time.monotonic()<deadline: time.sleep(.01)\n"
+                "os._exit(0 if Path(sys.argv[3]).exists() else 2)\n"
+            )
+            parent = subprocess.Popen([sys.executable, "-c", parent_code, str(ROOT / "service/async_guard.py"), worker_code, str(started)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            self.assertEqual(parent.wait(timeout=8), 0, "worker readiness was not established")
             time.sleep(.7)
             self.assertTrue(started.exists())
             self.assertFalse(marker.exists())
