@@ -39,7 +39,7 @@ the executable body. For multiple input sorts, quantifiers wrap in reverse input
 order so the body retains the declared input-index order.
 
 `vor.construction-root-inventory` records the additional construction rules and
-side conditions. `make test-construction-mutations` exercises five independent
+side conditions. `make test-construction-mutations` exercises six independent
 mutants in disposable copies, leaving the working tree untouched.
 
 ## Reviewed construction rules
@@ -55,7 +55,7 @@ The exact source and every clause are checked, including unused functions.
 | Expression evidence | Source construction | Obligations |
 | --- | --- | --- |
 | `[local]` | A lexical variable | Exact scope/slot and algebraic type |
-| `[constructor C Proofs]` | A nullary tag or its canonical cons representation | Exact tag, spine, arity and every field proof/type |
+| `[constructor C Proofs]` | A nullary tag `C`, or the canonical cons spine `[C F ...]` with at least one field; `[C]` is a one-element list and is rejected | Exact tag, spine, arity and every field proof/type |
 | `[let ValueProof BodyProof]` | A lexical let | Value in old scope; exact value/type prepended for the body |
 | `[call Name Proofs]` | A saturated frozen call | Every argument proof, exact signature and dependency/recursion rule |
 

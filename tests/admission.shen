@@ -107,6 +107,33 @@
       [cons succ [cons (admit-test.x) []]] (admit-test.x) ->
         [cons succ [cons [total.add (admit-test.x) (admit-test.x)] []]]]))) rejected)
 
+(define admit-test.copy
+  -> [define total.copy zero -> zero
+       [cons succ [cons (admit-test.x) []]] -> [cons succ [cons [total.copy (admit-test.x)] []]]])
+(define admit-test.copy-step -> [cons succ [cons [total.copy (admit-test.x)] []]])
+(test.equal admission-no-overlapping-clause
+  (hd (admit-test.recheck (admit-test.mutant (admit-test.copy)
+    [define total.copy zero -> zero
+      [cons succ [cons (admit-test.x) []]] -> (admit-test.copy-step)
+      zero -> zero]))) rejected)
+(test.equal admission-no-reordered-clauses
+  (hd (admit-test.recheck (admit-test.mutant (admit-test.copy)
+    [define total.copy [cons succ [cons (admit-test.x) []]] -> (admit-test.copy-step)
+      zero -> zero]))) rejected)
+(test.equal admission-no-wildcard-pattern
+  (hd (admit-test.recheck (admit-test.mutant (admit-test.copy)
+    [define total.copy zero -> zero _ -> zero]))) rejected)
+(test.equal admission-no-deep-field-pattern
+  (hd (admit-test.recheck (admit-test.mutant (admit-test.copy)
+    [define total.copy zero -> zero
+      [cons succ [cons [cons succ [cons (admit-test.x) []]] []]] -> zero]))) rejected)
+(test.equal admission-no-primitive-body
+  (hd (admit-test.recheck (admit-test.mutant (admit-test.copy-step)
+    [hd [cons zero []]]))) rejected)
+(test.equal admission-no-extra-constructor-field
+  (hd (admit-test.recheck (admit-test.mutant (admit-test.copy-step)
+    [cons succ [cons [total.copy (admit-test.x)] [cons zero []]]]))) rejected)
+
 (define admit-test.associativity
   -> [forall natural [forall natural [forall natural
     [equal natural [app total.add [[app total.add [[v 0] [v 1]]] [v 2]]]
@@ -264,3 +291,23 @@
     (admission-demo.contracts) (admission-demo.construction)
     (admission-demo.right-succ) (admission-demo.right-succ-proof) 2000)
   [accepted constructed-theorem])
+
+\\ `[C]` runs to a one-element list, never the nullary value C. Admitting it as
+\\ C would bind a theorem to a value the exact source never returns.
+(define admit-test.nullary-source
+  -> [shen-source 0 [[define admit-test.nullary zero -> [cons zero []]
+       [cons succ [cons (intern "N") []]] -> zero]]])
+(define admit-test.nullary-contracts
+  -> [[contract admit-test.nullary [natural] natural 0 [equal natural [v 0] [app zero []]]]])
+(define admit-test.nullary-signature
+  -> [fol-signature 1 [] (vor.contract-functions (admit-test.nullary-contracts)) [] (vor.standard-data)])
+(define admit-test.nullary-program -> (admission-demo.normalized (vor.normalize (admit-test.nullary-source))))
+(test.equal admission-no-singleton-as-nullary
+  (vor.construct-check (admit-test.nullary-program) (admit-test.nullary-signature)
+    (admit-test.nullary-contracts)
+    (vor.construct (admit-test.nullary-program) (admit-test.nullary-signature)
+      (admit-test.nullary-contracts)))
+  [rejected constructor-representation])
+(test.equal admission-singleton-runs-to-list
+  (hd (tl (vor.run (admit-test.nullary-program) admit-test.nullary [zero] 100)))
+  [value [zero]])

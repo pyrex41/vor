@@ -37,9 +37,15 @@ make compiler-demo
 
 The published release includes a macOS arm64 binary; Linux is built from the
 same checksum-pinned source when a binary is unavailable. `toolchain.lock.json`
-records provenance. Downloads and host files remain in `.tools/`. `scripts/shen`
-checks the selected runtime identity on every invocation and never silently
-falls back to another Shen implementation.
+records provenance. Downloads and host files remain in `.tools/`. Bootstrap
+installs only from a freshly extracted, checksum-verified archive and records
+the SHA-256 of every host file under `bin/` and `lib/` together with that archive
+digest. On every invocation `scripts/shen` copies those files and the PR #117
+overlay into a fresh private directory, hashes the copies against the record and
+the pinned overlay digest, and runs only the copies. It refuses on any mismatch
+and never silently falls back to another Shen implementation. The record binds a
+local build to the verified source archive; a Linux source build has no
+published binary digest, so it is not a reproducible-build attestation.
 
 ## A model and its evidence
 

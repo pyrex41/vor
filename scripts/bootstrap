@@ -2,12 +2,36 @@
 # Pinned shared pyrex41 Shen-Scheme host. No npm/JS runtime.
 set -eu
 cd "$(dirname "$0")/.."
+. scripts/host.sh
 mkdir -p .tools/downloads .tools/host
-host_path=".tools/host-path-$(uname -s)-$(uname -m)"
-hash() {
-  if command -v sha256sum >/dev/null 2>&1; then sha256sum "$1" | cut -d ' ' -f 1
-  else shasum -a 256 "$1" | cut -d ' ' -f 1; fi
+hash() { vor_hash "$1"; }
+
+# A previous install is reused only when its recorded identity names the pinned
+# archive and every recorded file still has its recorded digest.
+installed_matches() {
+  [ -f "$vor_identity" ] && [ -f "$vor_host_path" ] || return 1
+  [ "$(cat "$vor_host_path")" = "$1" ] || return 1
+  [ "$(head -n 1 "$vor_identity")" = "archive $vor_archive_sha256" ] || return 1
+  root=$(dirname "$(dirname "$1")")
+  tail -n +2 "$vor_identity" | while read -r digest file; do
+    [ -f "$root/$file" ] && [ "$(hash "$root/$file")" = "$digest" ] || exit 1
+  done
 }
+
+fetch_kernel() {
+  kernel=.tools/t-star-pr117.shen
+  if [ ! -f "$kernel" ] || [ "$(hash "$kernel")" != "$vor_overlay_sha256" ]; then
+    rm -f "$kernel"
+    curl --fail --location --retry 3 --connect-timeout 15 --max-time 60 \
+      https://raw.githubusercontent.com/Shen-Language/shen-sources/ec16a9fa4fc2e87e2aa336fb1ae30e8ac2266394/sources/t-star.shen \
+      -o "$kernel.partial"
+    mv "$kernel.partial" "$kernel"
+  fi
+  [ "$(hash "$kernel")" = "$vor_overlay_sha256" ] || {
+    echo 'PR 117 typechecker checksum mismatch' >&2; exit 1;
+  }
+}
+
 case "$(uname -s):$(uname -m)" in
   Linux:x86_64|Linux:aarch64)
     source_archive=".tools/downloads/shen-scheme-v0.52-pyrex41.5-src.tar.gz"
@@ -17,44 +41,37 @@ case "$(uname -s):$(uname -m)" in
         -o "$source_archive.partial"
       mv "$source_archive.partial" "$source_archive"
     fi
-    [ "$(hash "$source_archive")" = c57f47586894534b9797daf5c0cc65c58dc6fb89d6ea6f0c2b48ac64de66d010 ] || {
+    [ "$(hash "$source_archive")" = "$vor_archive_sha256" ] || {
       echo 'Shen-Scheme source checksum mismatch' >&2; exit 1;
     }
     directory=.tools/source/shen-scheme-v0.52-pyrex41.5-src
-    if [ ! -x "$directory/_build/bin/shen-scheme" ]; then
-      mkdir -p .tools/source
-      if [ ! -d "$directory" ]; then
-        rm -rf "$directory.partial"
-        mkdir "$directory.partial"
-        tar xzf "$source_archive" --no-same-owner --strip-components=1 -C "$directory.partial"
-        mv "$directory.partial" "$directory"
-      fi
-      command -v timeout >/dev/null 2>&1 || {
-        echo 'Linux source bootstrap requires coreutils timeout.' >&2; exit 2;
-      }
-      if [ "$(cc -print-file-name=libuuid.so)" != libuuid.so ]; then
-        timeout --kill-after=15s 10m make -C "$directory"
-      else
-        echo 'libuuid development library unavailable; building without optional UUID linkage.' >&2
-        timeout --kill-after=15s 10m make -C "$directory" linkerflags='-lm -ldl -lpthread'
-      fi
+    host="$directory/_build/bin/shen-scheme"
+    fetch_kernel
+    if installed_matches "$host"; then
+      echo 'Pinned Shen-Scheme source build matches its recorded identity.'
+      exit 0
     fi
-    kernel=.tools/t-star-pr117.shen
-    if [ ! -f "$kernel" ]; then
-      curl --fail --location --retry 3 --connect-timeout 15 --max-time 60 \
-        https://raw.githubusercontent.com/Shen-Language/shen-sources/ec16a9fa4fc2e87e2aa336fb1ae30e8ac2266394/sources/t-star.shen \
-        -o "$kernel.partial"
-      mv "$kernel.partial" "$kernel"
-    fi
-    [ "$(hash "$kernel")" = 480e26c610b593b66f87118ea2fbeacaf34201e42f2279a09decfb9481879168 ] || {
-      echo 'PR 117 typechecker checksum mismatch' >&2; exit 1;
+    # Never build in, or reuse, a tree not freshly extracted from the archive.
+    rm -f "$vor_identity" "$vor_host_path"
+    rm -rf "$directory" "$directory.partial"
+    mkdir -p .tools/source "$directory.partial"
+    tar xzf "$source_archive" --no-same-owner --strip-components=1 -C "$directory.partial"
+    command -v timeout >/dev/null 2>&1 || {
+      echo 'Linux source bootstrap requires coreutils timeout.' >&2; exit 2;
     }
-    printf '%s\n' "$directory/_build/bin/shen-scheme" > "$host_path"
+    if [ "$(cc -print-file-name=libuuid.so)" != libuuid.so ]; then
+      timeout --kill-after=15s 10m make -C "$directory.partial"
+    else
+      echo 'libuuid development library unavailable; building without optional UUID linkage.' >&2
+      timeout --kill-after=15s 10m make -C "$directory.partial" linkerflags='-lm -ldl -lpthread'
+    fi
+    mv "$directory.partial" "$directory"
+    vor_record_identity "$host"
+    printf '%s\n' "$host" > "$vor_host_path"
     echo 'Pinned Shen-Scheme source built.'
     exit 0 ;;
   Darwin:arm64)
     asset=macOS-arm64
-    expected=1dbbdfd4dbfc64383edf2ee08a788cb410bb3f5104e3b6b32204e443baeb3ff9
     directory=shen-scheme-v0.52-pyrex41.5-macOS-bin ;;
   *) echo 'Pinned binaries support Linux x86_64 and macOS arm64.' >&2; exit 2 ;;
 esac
@@ -65,17 +82,13 @@ if [ ! -f "$archive" ]; then
     -o "$archive.partial"
   mv "$archive.partial" "$archive"
 fi
-[ "$(hash "$archive")" = "$expected" ] || { echo 'Host checksum mismatch' >&2; exit 1; }
+[ "$(hash "$archive")" = "$vor_archive_sha256" ] || { echo 'Host checksum mismatch' >&2; exit 1; }
+fetch_kernel
+# Extraction is cheap: always replace the tree from the verified archive.
+rm -f "$vor_identity" "$vor_host_path"
+rm -rf ".tools/host/$directory"
 tar xzf "$archive" --no-same-owner -C .tools/host
-kernel=.tools/t-star-pr117.shen
-if [ ! -f "$kernel" ]; then
-  curl --fail --location --retry 3 --connect-timeout 15 --max-time 60 \
-    https://raw.githubusercontent.com/Shen-Language/shen-sources/ec16a9fa4fc2e87e2aa336fb1ae30e8ac2266394/sources/t-star.shen \
-    -o "$kernel.partial"
-  mv "$kernel.partial" "$kernel"
-fi
-[ "$(hash "$kernel")" = 480e26c610b593b66f87118ea2fbeacaf34201e42f2279a09decfb9481879168 ] || {
-  echo 'PR 117 typechecker checksum mismatch' >&2; exit 1;
-}
-printf '%s\n' ".tools/host/$directory/bin/shen-scheme" > "$host_path"
+host=".tools/host/$directory/bin/shen-scheme"
+vor_record_identity "$host"
+printf '%s\n' "$host" > "$vor_host_path"
 echo 'Pinned Shen-Scheme binary ready.'

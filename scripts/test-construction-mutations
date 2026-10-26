@@ -8,6 +8,7 @@ mutations=[
  ('post-proof-bypass','kernel/admit.shen', '(vor.admit-post-finish (vor.admit-posts Sig Cs Posts Equations Fuel))', '[accepted total-admission]'),
  ('pattern-linearity','kernel/admit.shen', '(= I (length Env))', 'true'),
  ('injection-endpoint','proofs/induction.shen', '(= (vor.fol-at As I) [found L])', 'true'),
+ ('singleton-nullary','kernel/admit.shen', '  _ _ _ _ _ _ [expressions []] -> [rejected constructor-representation]\n', ''),
  ('induction-ih-leak','proofs/induction.shen', '(append (vor.algebra-hypotheses S Lifted Fields 0) (vor.fol-shift-context G N))', '(append [(vor.fol-sub Lifted [app C (vor.algebra-variables N 0)] 0)] (vor.fol-shift-context G N))'),
 ]
 for name,filename,old,new in mutations:

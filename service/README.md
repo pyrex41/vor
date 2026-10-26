@@ -1,6 +1,6 @@
 # One-shot checker transport
 
-After `make bootstrap`, run `python3 service/checker-launch.py CONFIG`.
+After `make bootstrap`, run `python3 service/checker-launch.py [--deadline SECONDS] CONFIG`.
 CONFIG is a trusted Shen source file, resolved relative to the caller's directory.
 See `config-example.shen`. Loading it executes code with full host authority; it
 must never be selected or supplied by an untrusted request.
@@ -22,16 +22,25 @@ framing and response identity, never theorem validity.
 
 A nonzero exit means no semantic result. Never interpret absent, partial, extra,
 wrong-ID, or failed-child output as checked. Worker stdout is capped at four
-bytes and diagnostics at 4096 bytes; worker execution and exit share a five
-second deadline. Failure kills and reaps the owned process group. The launcher
-also has a separate five second input deadline covering header, body and EOF.
+bytes and diagnostics at 4096 bytes; worker execution and exit share one
+deadline, 10 seconds by default and 1..120 whole seconds with `--deadline`
+(supervisor policy, never request data). After every outcome, success included,
+the launcher kills the owned worker process group. SIGTERM, SIGINT or SIGHUP to
+the launcher also kill and reap that group before it exits without a result. On
+Linux the worker leader additionally receives SIGKILL if the launcher dies
+(`PR_SET_PDEATHSIG`); descendants of a SIGKILLed launcher's worker are outside
+that guarantee, so supervisors should still contain the whole launcher tree.
+The launcher also has a separate five second input deadline covering header,
+body and EOF.
 The caller must impose an overall deadline and OS memory/CPU
 limits appropriate to its environment. This is not a resource sandbox.
 
-The supervisor must trust the complete checker source tree and the host binary
-selected by the platform host-path file, as well as the configuration. The
-overlay checksum only identifies that overlay; it does not attest the host or
-source tree. Deploy these together as an immutable reviewed artifact.
+The launcher copies the host files named in the bootstrap identity record and
+the PR #117 overlay into a fresh private directory, hashing the exact bytes it
+writes, and runs only those copies. The supervisor must still trust the
+complete checker source tree, the identity record and the configuration; the
+record detects drift, not a hostile writer of `.tools/`. Deploy these together
+as an immutable reviewed artifact.
 
 The config is loaded in a fresh process after kernel setup and before request
 decoding. It can redefine trusted code, so its review is part of the trusted
