@@ -1,61 +1,120 @@
 #!/usr/bin/env python3
 """Serialize the exact model printed by the trusted Shen definition."""
-import argparse, hashlib, json, os, re, signal, subprocess
+import argparse, hashlib, json, os, re, selectors, signal, subprocess, time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 MAX_OUTPUT = 1_000_000
 MAX_SECONDS = 30
+BEGIN = "effects-model-begin-7f1c"
+END = "effects-model-end-7f1c"
+
+def _parse_one(tokens, index, depth=0, nodes=None):
+    nodes = [0] if nodes is None else nodes
+    if depth > 128 or nodes[0] >= 65536 or index >= len(tokens): raise ValueError("model exceeds parser bound")
+    nodes[0] += 1
+    if tokens[index] != "[":
+        value = tokens[index]
+        if re.fullmatch(r"-?[0-9]+", value): value = int(value)
+        elif value == "true": value = True
+        elif value == "false": value = False
+        return value, index + 1
+    values=[]; index += 1
+    while index < len(tokens) and tokens[index] != "]":
+        value, index = _parse_one(tokens, index, depth + 1, nodes); values.append(value)
+    if index >= len(tokens): raise ValueError("unterminated model list")
+    return values, index + 1
 
 def parse_sexpr(text):
+    """Parse exactly one complete VOR value; used by unit tests and exporter."""
     tokens = re.findall(r"\[|\]|[^\s\[\]]+", text)
-    def one(i):
-        if tokens[i] != "[":
-            v = tokens[i]
-            if re.fullmatch(r"-?[0-9]+", v): v = int(v)
-            elif v == "true": v = True
-            elif v == "false": v = False
-            return v, i + 1
-        out=[]; i += 1
-        while i < len(tokens) and tokens[i] != "]":
-            v, i = one(i); out.append(v)
-        if i >= len(tokens): raise ValueError("unterminated list")
-        return out, i + 1
-    start = next(i for i,t in enumerate(tokens) if t == "[")
-    value, end = one(start)
+    value, end = _parse_one(tokens, 0)
+    if end != len(tokens): raise ValueError("trailing model tokens")
+    if not isinstance(value, list): raise ValueError("model must be a list")
     return value
 
-def source_paths():
-    roots = ["vor.shen", "scripts/shen", "toolchain.lock.json", "examples/effects-protocol.shen"]
+def parse_duplicate_sexpr(text):
+    tokens = re.findall(r"\[|\]|[^\s\[\]]+", text)
+    first, end = _parse_one(tokens, 0)
+    second, end = _parse_one(tokens, end)
+    if end != len(tokens) or first != second: raise ValueError("expected exactly two identical runtime values")
+    return first
+
+def _bounded_run(argv):
+    proc = subprocess.Popen(argv, cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                            start_new_session=True)
+    buffers = {proc.stdout: bytearray(), proc.stderr: bytearray()}
+    streams = dict(buffers)
+    selector = selectors.DefaultSelector()
+    for stream in streams: selector.register(stream, selectors.EVENT_READ)
+    deadline = time.monotonic() + MAX_SECONDS
+    try:
+        while streams:
+            if time.monotonic() >= deadline:
+                raise RuntimeError("Shen export exceeded 30-second bound")
+            for key, _ in selector.select(max(0.05, deadline - time.monotonic())):
+                data = key.fileobj.read(8192)
+                if not data:
+                    selector.unregister(key.fileobj); streams.pop(key.fileobj, None); continue
+                buffers[key.fileobj].extend(data)
+                if sum(len(v) for v in buffers.values()) > MAX_OUTPUT:
+                    raise RuntimeError("Shen export exceeded 1 MiB output bound")
+        code = proc.wait(timeout=max(0.1, deadline - time.monotonic()))
+    except Exception:
+        os.killpg(proc.pid, signal.SIGKILL); proc.wait(); raise
+    return code, bytes(buffers[proc.stdout]), bytes(buffers[proc.stderr])
+
+def source_files():
+    roots = ["vor.shen", "scripts/shen", "scripts/export-effects-model", "toolchain.lock.json", "examples/effects-protocol.shen"]
     for directory in ("shen", "spec", "kernel", "proofs", "runtime", "construct"):
         roots.extend(str(p.relative_to(ROOT)) for p in (ROOT / directory).rglob("*.shen"))
-    overlay = ROOT / ".tools" / "t-star-pr117.shen"
+    tools = ROOT / ".tools"
+    overlay = tools / "t-star-pr117.shen"
     if overlay.is_file(): roots.append(str(overlay.relative_to(ROOT)))
-    return sorted(set(roots))
+    for path in tools.glob("host-path-*"):
+        if path.is_file():
+            roots.append(str(path.relative_to(ROOT)))
+            host = Path(path.read_text().strip())
+            if host.is_file(): roots.append("runtime-host/" + host.name)
+    files = {}
+    for rel in sorted(set(roots)):
+        if rel.startswith("runtime-host/"):
+            host_name = rel.split("/", 1)[1]
+            matches = []
+            for p in (tools.glob("host-path-*")):
+                if p.is_file() and Path(p.read_text().strip()).name == host_name: matches.append(Path(p.read_text().strip()))
+            if matches: files[rel] = matches[0]
+        else: files[rel] = ROOT / rel
+    return files
 
 def main():
     ap=argparse.ArgumentParser(); ap.add_argument("--mode", choices=["healthy","mutant-commit","mutant-finish","mutant-duplicate"], default="healthy"); ap.add_argument("--output", type=Path, required=True)
-    a=ap.parse_args(); out = a.output if a.output.is_absolute() else ROOT / a.output
-    if out.exists(): raise SystemExit("refusing to overwrite existing output: " + str(out))
-    expr = "(effects.emit)" if a.mode == "healthy" else "(print (effects.%s))" % a.mode
-    proc = subprocess.Popen([str(ROOT / "scripts" / "shen"), "-l", "examples/effects-protocol.shen", "-e", expr], cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, start_new_session=True)
-    try:
-        stdout, stderr = proc.communicate(timeout=MAX_SECONDS)
-    except subprocess.TimeoutExpired:
-        os.killpg(proc.pid, signal.SIGKILL); proc.wait(); raise SystemExit("Shen export exceeded 30-second bound")
-    if proc.returncode: raise SystemExit(stderr[-2000:])
-    if len(stdout.encode()) > MAX_OUTPUT: raise SystemExit("Shen export exceeded 1 MiB output bound")
-    try: model = parse_sexpr(stdout)
-    except (StopIteration, ValueError) as exc: raise SystemExit("invalid Shen model output: " + str(exc))
+    args=ap.parse_args(); output = args.output if args.output.is_absolute() else ROOT / args.output
+    if output.exists() or output.is_symlink(): raise SystemExit("refusing to overwrite existing output: " + str(output))
+    expr = "(effects.model)" if args.mode == "healthy" else "(effects.%s)" % args.mode
+    command = [str(ROOT / "scripts" / "shen"), "-l", "examples/effects-protocol.shen", "-e", "(print %s)" % BEGIN, "-e", expr, "-e", "(print %s)" % END]
+    try: code, raw_out, raw_err = _bounded_run(command)
+    except (OSError, RuntimeError) as exc: raise SystemExit(str(exc))
+    if code: raise SystemExit(raw_err.decode("utf-8", "replace")[-2000:])
+    try: text = raw_out.decode("utf-8")
+    except UnicodeDecodeError as exc: raise SystemExit("Shen output is not UTF-8: " + str(exc))
+    if text.count(BEGIN) != 2 or text.count(END) != 2: raise SystemExit("missing or duplicated exporter markers")
+    begin = text.rfind(BEGIN) + len(BEGIN); end = text.find(END, begin)
+    if end < begin: raise SystemExit("malformed exporter marker order")
+    segment = text[begin:end]
+    try: model = parse_sexpr(segment)
+    except ValueError as exc: raise SystemExit("invalid complete Shen model output: " + str(exc))
     if not isinstance(model,list) or len(model) != 6 or model[0] != "vor-model" or model[1] != 0:
         raise SystemExit("output is not a strict VOR/0 model")
     sources = {}
-    for rel in source_paths():
-        path = ROOT / rel
+    for rel, path in source_files().items():
         if not path.is_file(): raise SystemExit("missing source identity: " + rel)
         sources[rel] = hashlib.sha256(path.read_bytes()).hexdigest()
-    doc = {"schema":"vor-effects-model-v1", "model":model, "sources":sources,
-           "verification":{"claim":"VOR/0 model value exported from effects model", "status":"informational"}}
-    out.parent.mkdir(parents=True, exist_ok=True); out.write_text(json.dumps(doc, indent=2)+"\n")
-    print(json.dumps({"schema":doc["schema"],"output":str(out)}))
+    document = {"schema":"vor-effects-model-v1", "model":model, "sources":sources,
+                "verification":{"claim":"VOR/0 model value exported from effects model", "status":"informational"}}
+    output.parent.mkdir(parents=True, exist_ok=True)
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+    fd = os.open(output, flags, 0o644)
+    with os.fdopen(fd, "w", encoding="utf-8") as handle: json.dump(document, handle, indent=2); handle.write("\n")
+    print(json.dumps({"schema":document["schema"],"output":str(output)}))
 if __name__ == "__main__": main()
