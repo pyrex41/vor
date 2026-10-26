@@ -24,7 +24,7 @@ class EffectsExportTests(unittest.TestCase):
 
     def test_all_modes_are_exact_schema_and_source_bound(self):
         with tempfile.TemporaryDirectory(prefix="effects-export-") as directory:
-            for mode in ("healthy", "mutant-commit", "mutant-finish", "mutant-duplicate"):
+            for mode in ("healthy", "mutant-commit", "mutant-finish", "mutant-duplicate", "mutant-lost-work"):
                 output = Path(directory) / (mode + ".json")
                 result = self.run_export(mode, output)
                 self.assertEqual(result.returncode, 0, result.stderr)
@@ -100,12 +100,14 @@ class EffectsExportTests(unittest.TestCase):
                 model_path.write_bytes(original + b"\\n")
                 return result
             argv = ["export-effects-model", "--output", str(output)]
-            with patch.object(export, "_bounded_run", drift), patch.object(sys, "argv", argv):
-                with self.assertRaises(SystemExit) as failure:
-                    export.main()
-            self.assertIn("source identity changed", str(failure.exception))
-            self.assertFalse(output.exists())
-        model_path.write_bytes(original)
+            try:
+                with patch.object(export, "_bounded_run", drift), patch.object(sys, "argv", argv):
+                    with self.assertRaises(SystemExit) as failure:
+                        export.main()
+                self.assertIn("source identity changed", str(failure.exception))
+                self.assertFalse(output.exists())
+            finally:
+                model_path.write_bytes(original)
 
 
 if __name__ == "__main__":

@@ -43,6 +43,10 @@ falls back to another Shen implementation.
 
 ## A model and its evidence
 
+The [request-to-effects protocol](docs/EFFECTS-PROTOCOL.md) is an executable
+finite lifecycle model with crash/retry controls, independently rechecked
+counterexamples, and inert export for ShenCheck's generated TLA+ validation.
+
 Models are inert Shen data. Boolean expressions contain only literals,
 variables, negation, conjunction, and disjunction. Rules have a label, guard,
 and simultaneous assignments. Unassigned variables keep their values.
