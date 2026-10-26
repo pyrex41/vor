@@ -54,6 +54,20 @@ class EffectsExportTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             export.parse_sexpr(deep)
 
+    def test_long_sequences_round_trip_through_shen_printer(self):
+        # Shen's default printer elides list tails after 20 elements.
+        names = ["n%d" % i for i in range(25)]
+        expected = ["vor-model", 0, names, [list(range(30))]]
+        expression = "[vor-model 0 [%s] [[%s]]]" % (" ".join(names), " ".join(map(str, range(30))))
+        code, out, err = export._bounded_run(export.shen_command(expression, loads=()))
+        self.assertEqual(code, 0, err)
+        self.assertEqual(export.printed_value(out), expected)
+
+    def test_parser_rejects_elided_sequences(self):
+        for value in ("[a b ... etc]", "[vor-model 0 [x ...]]"):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                export.parse_sexpr(value)
+
     def test_existing_and_broken_symlink_outputs_are_not_overwritten(self):
         with tempfile.TemporaryDirectory(prefix="effects-output-") as directory:
             existing = Path(directory) / "existing.json"
