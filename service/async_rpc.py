@@ -111,7 +111,7 @@ class Worker:
         status_read, status_write = os.pipe()
         try:
             self.child = subprocess.Popen(
-                [sys.executable, str(Path(root) / "service/async_guard.py"), str(os.getpid()), str(status_write), *command],
+                [sys.executable, "-I", str(Path(root) / "service/async_guard.py"), str(os.getpid()), str(status_write), *command],
                 cwd=root, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                 pass_fds=(status_write,), start_new_session=True, bufsize=0)
         except BaseException:
