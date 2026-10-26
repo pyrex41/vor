@@ -1,8 +1,14 @@
-.PHONY: bootstrap test demo plan boundary-demo test-kernel logic-demo test-service program-demo
+.PHONY: bootstrap test demo plan boundary-demo test-kernel logic-demo test-service program-demo test-effects-protocol export-effects-model
 bootstrap:
 	./scripts/bootstrap
 test:
 	./scripts/shen -l tests/run.shen
+
+test-effects-protocol:
+	./scripts/shen -l tests/effects-protocol.shen
+
+export-effects-model:
+	./scripts/export-effects-model --mode healthy --output .work/effects-model.json
 demo:
 	./scripts/shen -l vor.shen -l examples/mutex.shen -e '(vor.verify (mutex.model) 8)' -e '(vor.verify (mutex.broken) 8)'
 plan:
