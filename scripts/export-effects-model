@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Serialize the exact model printed by the trusted Shen definition."""
-import argparse, hashlib, json, os, re, selectors, signal, subprocess, time
+import argparse, hashlib, json, os, platform, re, selectors, signal, subprocess, time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -47,21 +47,32 @@ def _bounded_run(argv):
     streams = dict(buffers)
     selector = selectors.DefaultSelector()
     for stream in streams: selector.register(stream, selectors.EVENT_READ)
+    for stream in streams: os.set_blocking(stream.fileno(), False)
     deadline = time.monotonic() + MAX_SECONDS
     try:
         while streams:
             if time.monotonic() >= deadline:
                 raise RuntimeError("Shen export exceeded 30-second bound")
             for key, _ in selector.select(max(0.05, deadline - time.monotonic())):
-                data = key.fileobj.read(8192)
+                try:
+                    data = os.read(key.fileobj.fileno(), 8192)
+                except BlockingIOError:
+                    continue
                 if not data:
                     selector.unregister(key.fileobj); streams.pop(key.fileobj, None); continue
                 buffers[key.fileobj].extend(data)
                 if sum(len(v) for v in buffers.values()) > MAX_OUTPUT:
                     raise RuntimeError("Shen export exceeded 1 MiB output bound")
-        code = proc.wait(timeout=max(0.1, deadline - time.monotonic()))
+        code = proc.poll()
+        if code is None: code = proc.wait(timeout=max(0.1, deadline - time.monotonic()))
     except Exception:
         os.killpg(proc.pid, signal.SIGKILL); proc.wait(); raise
+    finally:
+        try: os.killpg(proc.pid, signal.SIGKILL)
+        except ProcessLookupError: pass
+        proc.wait()
+        for stream in buffers:
+            stream.close()
     return code, bytes(buffers[proc.stdout]), bytes(buffers[proc.stderr])
 
 def source_files():
@@ -71,21 +82,26 @@ def source_files():
     tools = ROOT / ".tools"
     overlay = tools / "t-star-pr117.shen"
     if overlay.is_file(): roots.append(str(overlay.relative_to(ROOT)))
-    for path in tools.glob("host-path-*"):
-        if path.is_file():
-            roots.append(str(path.relative_to(ROOT)))
-            host = Path(path.read_text().strip())
-            if host.is_file(): roots.append("runtime-host/" + host.name)
+    active_path = tools / ("host-path-%s-%s" % (platform.system(), platform.machine()))
+    external_host = None
+    if active_path.is_file():
+        roots.append(str(active_path.relative_to(ROOT)))
+        host = Path(active_path.read_text().strip())
+        resolved_tools = tools.resolve()
+        if host.is_file() and host.resolve().is_relative_to(resolved_tools):
+            roots.append(".tools/" + str(host.resolve().relative_to(resolved_tools)))
+        elif host.is_file():
+            external_host = host.resolve()
     files = {}
     for rel in sorted(set(roots)):
-        if rel.startswith("runtime-host/"):
-            host_name = rel.split("/", 1)[1]
-            matches = []
-            for p in (tools.glob("host-path-*")):
-                if p.is_file() and Path(p.read_text().strip()).name == host_name: matches.append(Path(p.read_text().strip()))
-            if matches: files[rel] = matches[0]
+        if rel.startswith(".tools/"):
+            files[rel] = resolved_tools / rel[len(".tools/"):]
         else: files[rel] = ROOT / rel
+    if external_host is not None: files["__external_runtime_host__"] = external_host
     return files
+
+def source_snapshot():
+    return {name: hashlib.sha256(path.read_bytes()).hexdigest() for name, path in source_files().items() if path.is_file()}
 
 def main():
     ap=argparse.ArgumentParser(); ap.add_argument("--mode", choices=["healthy","mutant-commit","mutant-finish","mutant-duplicate"], default="healthy"); ap.add_argument("--output", type=Path, required=True)
@@ -93,8 +109,11 @@ def main():
     if output.exists() or output.is_symlink(): raise SystemExit("refusing to overwrite existing output: " + str(output))
     expr = "(effects.model)" if args.mode == "healthy" else "(effects.%s)" % args.mode
     command = [str(ROOT / "scripts" / "shen"), "-l", "examples/effects-protocol.shen", "-e", "(print %s)" % BEGIN, "-e", expr, "-e", "(print %s)" % END]
+    before = source_snapshot()
     try: code, raw_out, raw_err = _bounded_run(command)
     except (OSError, RuntimeError) as exc: raise SystemExit(str(exc))
+    after = source_snapshot()
+    if before != after: raise SystemExit("source identity changed during export")
     if code: raise SystemExit(raw_err.decode("utf-8", "replace")[-2000:])
     try: text = raw_out.decode("utf-8")
     except UnicodeDecodeError as exc: raise SystemExit("Shen output is not UTF-8: " + str(exc))
@@ -107,11 +126,14 @@ def main():
     if not isinstance(model,list) or len(model) != 6 or model[0] != "vor-model" or model[1] != 0:
         raise SystemExit("output is not a strict VOR/0 model")
     sources = {}
+    verification_host = None
     for rel, path in source_files().items():
         if not path.is_file(): raise SystemExit("missing source identity: " + rel)
-        sources[rel] = hashlib.sha256(path.read_bytes()).hexdigest()
+        digest = hashlib.sha256(path.read_bytes()).hexdigest()
+        if rel == "__external_runtime_host__": verification_host = {"path": str(path), "sha256": digest}
+        else: sources[rel] = digest
     document = {"schema":"vor-effects-model-v1", "model":model, "sources":sources,
-                "verification":{"claim":"VOR/0 model value exported from effects model", "status":"informational"}}
+                "verification":{"claim":"VOR/0 model value exported from effects model", "status":"informational", "runtime_host":verification_host}}
     output.parent.mkdir(parents=True, exist_ok=True)
     flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
     fd = os.open(output, flags, 0o644)

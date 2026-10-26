@@ -7,6 +7,7 @@ import sys
 import tempfile
 import time
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -32,7 +33,7 @@ class EffectsExportTests(unittest.TestCase):
                 self.assertEqual(document["schema"], "vor-effects-model-v1")
                 self.assertEqual(document["model"][:2], ["vor-model", 0])
                 self.assertIn("scripts/export-effects-model", document["sources"])
-                self.assertTrue(any(name.startswith("runtime-host/") for name in document["sources"]))
+                self.assertTrue(any(name.startswith(".tools/") for name in document["sources"]))
                 self.assertFalse(any(name.startswith("/") for name in document["sources"]))
 
     def test_parser_rejects_hostile_or_trailing_input(self):
@@ -72,6 +73,39 @@ class EffectsExportTests(unittest.TestCase):
             self.assertLess(time.monotonic() - started, 2)
         finally:
             export.MAX_SECONDS = old
+
+    def test_supervisor_kills_one_byte_writer_and_descendant(self):
+        old = export.MAX_SECONDS
+        export.MAX_SECONDS = 0.05
+        try:
+            for code in (
+                "import sys,time; sys.stdout.write('x'); sys.stdout.flush(); time.sleep(2)",
+                "import subprocess,sys,time; subprocess.Popen([sys.executable,'-c','import time; time.sleep(2)']); time.sleep(2)",
+            ):
+                started = time.monotonic()
+                with self.assertRaises(RuntimeError):
+                    export._bounded_run([sys.executable, "-c", code])
+                self.assertLess(time.monotonic() - started, 2)
+        finally:
+            export.MAX_SECONDS = old
+
+    def test_source_drift_during_run_is_rejected(self):
+        model_path = ROOT / "examples" / "effects-protocol.shen"
+        original = model_path.read_bytes()
+        with tempfile.TemporaryDirectory(prefix="effects-drift-") as directory:
+            output = Path(directory) / "drift.json"
+            real_run = export._bounded_run
+            def drift(command):
+                result = real_run(command)
+                model_path.write_bytes(original + b"\\n")
+                return result
+            argv = ["export-effects-model", "--output", str(output)]
+            with patch.object(export, "_bounded_run", drift), patch.object(sys, "argv", argv):
+                with self.assertRaises(SystemExit) as failure:
+                    export.main()
+            self.assertIn("source identity changed", str(failure.exception))
+            self.assertFalse(output.exists())
+        model_path.write_bytes(original)
 
 
 if __name__ == "__main__":
