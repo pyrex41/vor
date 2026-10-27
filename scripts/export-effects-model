@@ -8,16 +8,22 @@ MAX_OUTPUT = 1_000_000
 MAX_SECONDS = 30
 BEGIN = "effects-model-begin-7f1c"
 END = "effects-model-end-7f1c"
+# Shen's printer elides list tails past *maximum-print-sequence-size* (default 20)
+# as "... etc". Lift it to the parser's node bound so no accepted value is elided.
+PRINT_LIMIT = 65536
 
 def _parse_one(tokens, index, depth=0, nodes=None):
     nodes = [0] if nodes is None else nodes
     if depth > 128 or nodes[0] >= 65536 or index >= len(tokens): raise ValueError("model exceeds parser bound")
     nodes[0] += 1
+    if tokens[index] == "...": raise ValueError("elided Shen output")
     if tokens[index] != "[":
         value = tokens[index]
         if re.fullmatch(r"-?[0-9]+", value): value = int(value)
         elif value == "true": value = True
         elif value == "false": value = False
+        # Only VOR atoms; printed strings, vectors, closures and improper lists fail.
+        elif re.fullmatch(r"[A-Za-z][A-Za-z0-9_.-]*", value) is None: raise ValueError("non-VOR atom in model")
         return value, index + 1
     values=[]; index += 1
     while index < len(tokens) and tokens[index] != "]":
@@ -82,6 +88,22 @@ def _bounded_run(argv):
                 stream.close()
         return code, bytes(buffers[proc.stdout]), bytes(buffers[proc.stderr])
 
+def shen_command(expression, loads=("examples/effects-protocol.shen",)):
+    """Print one value between markers, with Shen's sequence elision disabled."""
+    command = [str(ROOT / "scripts" / "shen")]
+    for path in loads: command.extend(["-l", path])
+    return command + ["-e", "(set *maximum-print-sequence-size* %d)" % PRINT_LIMIT,
+                      "-e", "(print %s)" % BEGIN, "-e", expression, "-e", "(print %s)" % END]
+
+def printed_value(raw_out):
+    """Parse the single complete value echoed between the exporter markers."""
+    try: text = raw_out.decode("utf-8")
+    except UnicodeDecodeError as exc: raise ValueError("Shen output is not UTF-8: " + str(exc))
+    if text.count(BEGIN) != 2 or text.count(END) != 2: raise ValueError("missing or duplicated exporter markers")
+    begin = text.rfind(BEGIN) + len(BEGIN); end = text.find(END, begin)
+    if end < begin: raise ValueError("malformed exporter marker order")
+    return parse_sexpr(text[begin:end])
+
 def source_files():
     roots = ["vor.shen", "scripts/shen", "scripts/host.sh", "scripts/export-effects-model", "scripts/effects-export-supervisor.py", "toolchain.lock.json", "examples/effects-protocol.shen", "Makefile", "tests/effects-protocol.shen"]
     for directory in ("shen", "spec", "kernel", "proofs", "runtime", "construct"):
@@ -131,20 +153,14 @@ def main():
     args=ap.parse_args(); output = args.output if args.output.is_absolute() else ROOT / args.output
     if output.exists() or output.is_symlink(): raise SystemExit("refusing to overwrite existing output: " + str(output))
     expr = "(effects.model)" if args.mode == "healthy" else "(effects.%s)" % args.mode
-    command = [str(ROOT / "scripts" / "shen"), "-l", "examples/effects-protocol.shen", "-e", "(print %s)" % BEGIN, "-e", expr, "-e", "(print %s)" % END]
+    command = shen_command(expr)
     before = source_snapshot()
     try: code, raw_out, raw_err = _bounded_run(command)
     except (OSError, RuntimeError) as exc: raise SystemExit(str(exc))
     after = source_snapshot()
     if before != after: raise SystemExit("source identity changed during export")
     if code: raise SystemExit(raw_err.decode("utf-8", "replace")[-2000:])
-    try: text = raw_out.decode("utf-8")
-    except UnicodeDecodeError as exc: raise SystemExit("Shen output is not UTF-8: " + str(exc))
-    if text.count(BEGIN) != 2 or text.count(END) != 2: raise SystemExit("missing or duplicated exporter markers")
-    begin = text.rfind(BEGIN) + len(BEGIN); end = text.find(END, begin)
-    if end < begin: raise SystemExit("malformed exporter marker order")
-    segment = text[begin:end]
-    try: model = parse_sexpr(segment)
+    try: model = printed_value(raw_out)
     except ValueError as exc: raise SystemExit("invalid complete Shen model output: " + str(exc))
     if not isinstance(model,list) or len(model) != 6 or model[0] != "vor-model" or model[1] != 0:
         raise SystemExit("output is not a strict VOR/0 model")

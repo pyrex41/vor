@@ -26,7 +26,9 @@ make test-effects-protocol
 `export-effects-model` invokes the trusted Shen definition and serializes its
 inert model value to `vor-effects-model-v1`. It refuses to overwrite an output,
 uses bounded process/output limits, and records source hashes for the model,
-kernel, launcher, toolchain, and PR117 overlay. The `verification` field is
+kernel, launcher, toolchain, and PR117 overlay. It lifts Shen's
+`*maximum-print-sequence-size*` for the export and rejects any elided (`...`)
+output, so long lists are never silently truncated. The `verification` field is
 informational metadata; the consumer must run its own checker. Negative controls
 are `mutant-commit` (lost mutation), `mutant-finish` (premature completion),
 `mutant-duplicate` (second application duplicates the effect), and
