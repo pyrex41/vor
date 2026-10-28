@@ -15,12 +15,12 @@ interpreting an acceptance result.
 
 ## Run
 
-The primary host is the shared **pyrex41 Shen-Scheme on Chez** runtime used by
-ShenCheck. Bootstrap pins upstream `tizoc/shen-scheme` commit `8d26151` by archive SHA-256. The
-release source is based on upstream Shen-Scheme `8d261518`. The published
-macOS binary lacks PR #117 helpers, so the launcher always loads the complete
-checksum-pinned typechecker from kernel commit `ec16a9f` and checks its helper
-arities. The launcher requires ShenOSKernel 43.1 before applying the overlay.
+The primary host is upstream **tizoc/shen-scheme on Chez**. Bootstrap pins
+commit `8d261518db17fbfec32d1b268b40ed216b925c74` by archive SHA-256 and
+compiles it with the verified upstream v0.52 release compiler. The independently
+pinned kernel is `ec16a9f`. The launcher additionally loads its complete,
+checksum-pinned typechecker and checks its helper arities. It requires
+ShenOSKernel 43.1 before applying this overlay.
 The lock records host and kernel identities separately. No JavaScript runtime is used.
 
 ```sh
