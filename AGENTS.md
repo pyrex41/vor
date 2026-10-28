@@ -2,7 +2,7 @@
 
 - Read README.md, docs/SEMANTICS.md, docs/TRUST.md, and
   docs/PROOF-OBLIGATIONS.md before changing acceptance semantics.
-- Use the shared pyrex41/shen-scheme v0.52-pyrex41.5 on Chez. Its pinned
+- Use the upstream tizoc/shen-scheme 8d26151 on Chez. Its pinned
   ShenOSKernel 43.1 and PR #117 identities are recorded in toolchain.lock.json;
   host and kernel versions are distinct.
   `make bootstrap` installs pinned artifacts; `make test` is the main gate.

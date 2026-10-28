@@ -2,13 +2,8 @@
 # overlay into a fresh private directory, then hashes the copies. Callers run
 # only staged files, so a check cannot be separated from the bytes that load.
 vor_overlay_sha256=480e26c610b593b66f87118ea2fbeacaf34201e42f2279a09decfb9481879168
-case "$(uname -s):$(uname -m)" in
-  Linux:x86_64|Linux:aarch64)
-    vor_archive_sha256=c57f47586894534b9797daf5c0cc65c58dc6fb89d6ea6f0c2b48ac64de66d010 ;;
-  Darwin:arm64)
-    vor_archive_sha256=1dbbdfd4dbfc64383edf2ee08a788cb410bb3f5104e3b6b32204e443baeb3ff9 ;;
-  *) vor_archive_sha256=unsupported ;;
-esac
+# All platforms compile the same upstream source archive.
+vor_archive_sha256=adf1a2274638e2c8cc5b14cea511e6da6b28383d935911cba322b03e9fffeefd
 vor_host_path=".tools/host-path-$(uname -s)-$(uname -m)"
 vor_identity=".tools/host-identity-$(uname -s)-$(uname -m)"
 
