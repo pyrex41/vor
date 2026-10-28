@@ -105,7 +105,7 @@ def printed_value(raw_out):
     return parse_sexpr(text[begin:end])
 
 def source_files():
-    roots = ["vor.shen", "scripts/shen", "scripts/host.sh", "scripts/export-effects-model", "scripts/effects-export-supervisor.py", "toolchain.lock.json", "examples/effects-protocol.shen", "Makefile", "tests/effects-protocol.shen"]
+    roots = ["scripts/bootstrap", "scripts/build-upstream-shen.sh", "vor.shen", "scripts/shen", "scripts/host.sh", "scripts/export-effects-model", "scripts/effects-export-supervisor.py", "toolchain.lock.json", "examples/effects-protocol.shen", "Makefile", "tests/effects-protocol.shen"]
     for directory in ("shen", "spec", "kernel", "proofs", "runtime", "construct"):
         roots.extend(str(p.relative_to(ROOT)) for p in (ROOT / directory).rglob("*.shen"))
     tools = ROOT / ".tools"

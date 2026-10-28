@@ -15,12 +15,12 @@ interpreting an acceptance result.
 
 ## Run
 
-The primary host is the shared **pyrex41 Shen-Scheme on Chez** runtime used by
-ShenCheck. Bootstrap pins release `v0.52-pyrex41.5` by archive SHA-256. The
-release source is based on upstream Shen-Scheme `8d261518`. The published
-macOS binary lacks PR #117 helpers, so the launcher always loads the complete
-checksum-pinned typechecker from kernel commit `ec16a9f` and checks its helper
-arities. The launcher requires ShenOSKernel 43.1 before applying the overlay.
+The primary host is upstream **tizoc/shen-scheme on Chez**. Bootstrap pins
+commit `8d261518db17fbfec32d1b268b40ed216b925c74` by archive SHA-256 and
+compiles it with the verified upstream v0.52 release compiler. The independently
+pinned kernel is `ec16a9f`. The launcher additionally loads its complete,
+checksum-pinned typechecker and checks its helper arities. It requires
+ShenOSKernel 43.1 before applying this overlay.
 The lock records host and kernel identities separately. No JavaScript runtime is used.
 
 ```sh
@@ -213,3 +213,15 @@ The experimental [one-shot checker transport](service/README.md) accepts inert
 VOR-DATA/0 frames under a trusted startup configuration. Run `make test-service`
 for its hostile process corpus. This is a transport prerequisite; ShenCheck and
 BEAM refinement remain open.
+
+### Runtime build
+
+The host comes from upstream commit `8d261518db17fbfec32d1b268b40ed216b925c74`.
+Bootstrap verifies upstream's v0.52 binary (Linux x64 / macOS ARM) and compiles
+the current Scheme sources with its embedded Chez 10.3 compiler. The unchanged
+C launcher is checked by source digest before reuse. Linux ARM builds the
+v0.52 source release first because no binary is published for that platform.
+Kernel ec16a9f and the complete PR117 overlay retain separate pins.
+The exporter includes the build recipes and lock alongside runtime file hashes.
+The executable's version banner still reports 0.52; use the lock and runtime
+hashes, not that banner, to identify the built revision.

@@ -1,94 +1,53 @@
 #!/bin/sh
-# Pinned shared pyrex41 Shen-Scheme host. No npm/JS runtime.
+# Build pinned upstream sources with a verified upstream bootstrap compiler.
 set -eu
 cd "$(dirname "$0")/.."
 . scripts/host.sh
-mkdir -p .tools/downloads .tools/host
-hash() { vor_hash "$1"; }
-
-# A previous install is reused only when its recorded identity names the pinned
-# archive and every recorded file still has its recorded digest.
-installed_matches() {
-  [ -f "$vor_identity" ] && [ -f "$vor_host_path" ] || return 1
-  [ "$(cat "$vor_host_path")" = "$1" ] || return 1
-  [ "$(head -n 1 "$vor_identity")" = "archive $vor_archive_sha256" ] || return 1
-  root=$(dirname "$(dirname "$1")")
-  tail -n +2 "$vor_identity" | while read -r digest file; do
-    [ -f "$root/$file" ] && [ "$(hash "$root/$file")" = "$digest" ] || exit 1
-  done
-}
-
-fetch_kernel() {
-  kernel=.tools/t-star-pr117.shen
-  if [ ! -f "$kernel" ] || [ "$(hash "$kernel")" != "$vor_overlay_sha256" ]; then
-    rm -f "$kernel"
-    curl --fail --location --retry 3 --connect-timeout 15 --max-time 60 \
-      https://raw.githubusercontent.com/Shen-Language/shen-sources/ec16a9fa4fc2e87e2aa336fb1ae30e8ac2266394/sources/t-star.shen \
-      -o "$kernel.partial"
-    mv "$kernel.partial" "$kernel"
+unset SHEN_SCHEME_HOME SHEN_SCHEME_RUNTIME
+mkdir -p .tools/downloads .tools/source .tools/host
+fetch() {
+  destination=.tools/downloads/$1
+  if [ ! -f "$destination" ]; then
+    curl --fail --location --retry 3 --connect-timeout 15 --max-time 180 "$2" -o "$destination.partial"
+    mv "$destination.partial" "$destination"
   fi
-  [ "$(hash "$kernel")" = "$vor_overlay_sha256" ] || {
-    echo 'PR 117 typechecker checksum mismatch' >&2; exit 1;
-  }
+  [ "$(vor_hash "$destination")" = "$3" ] || { echo "Checksum mismatch: $1" >&2; exit 1; }
 }
-
+release=https://github.com/tizoc/shen-scheme/releases/download/v0.52
 case "$(uname -s):$(uname -m)" in
-  Linux:x86_64|Linux:aarch64)
-    source_archive=".tools/downloads/shen-scheme-v0.52-pyrex41.5-src.tar.gz"
-    if [ ! -f "$source_archive" ]; then
-      curl --fail --location --retry 3 --connect-timeout 15 --max-time 180 \
-        "https://github.com/pyrex41/shen-scheme/releases/download/v0.52-pyrex41.5/shen-scheme-v0.52-pyrex41.5-src.tar.gz" \
-        -o "$source_archive.partial"
-      mv "$source_archive.partial" "$source_archive"
-    fi
-    [ "$(hash "$source_archive")" = "$vor_archive_sha256" ] || {
-      echo 'Shen-Scheme source checksum mismatch' >&2; exit 1;
-    }
-    directory=.tools/source/shen-scheme-v0.52-pyrex41.5-src
-    host="$directory/_build/bin/shen-scheme"
-    fetch_kernel
-    if installed_matches "$host"; then
-      echo 'Pinned Shen-Scheme source build matches its recorded identity.'
-      exit 0
-    fi
-    # Never build in, or reuse, a tree not freshly extracted from the archive.
-    rm -f "$vor_identity" "$vor_host_path"
-    rm -rf "$directory" "$directory.partial"
-    mkdir -p .tools/source "$directory.partial"
-    tar xzf "$source_archive" --no-same-owner --strip-components=1 -C "$directory.partial"
-    command -v timeout >/dev/null 2>&1 || {
-      echo 'Linux source bootstrap requires coreutils timeout.' >&2; exit 2;
-    }
-    if [ "$(cc -print-file-name=libuuid.so)" != libuuid.so ]; then
-      timeout --kill-after=15s 10m make -C "$directory.partial"
-    else
-      echo 'libuuid development library unavailable; building without optional UUID linkage.' >&2
-      timeout --kill-after=15s 10m make -C "$directory.partial" linkerflags='-lm -ldl -lpthread'
-    fi
-    mv "$directory.partial" "$directory"
-    vor_record_identity "$host"
-    printf '%s\n' "$host" > "$vor_host_path"
-    echo 'Pinned Shen-Scheme source built.'
-    exit 0 ;;
-  Darwin:arm64)
-    asset=macOS-arm64
-    directory=shen-scheme-v0.52-pyrex41.5-macOS-bin ;;
-  *) echo 'Pinned binaries support Linux x86_64 and macOS arm64.' >&2; exit 2 ;;
+  Linux:x86_64) asset=linux-x64-bin; digest=aa711f576ea0ec96d86b0120eeba875153317a9af9e6a69f9c6ef4c00a4ad8c9 ;;
+  Darwin:arm64) asset=macOS-arm64-bin; digest=44e980d192d156859d06374e554813e1dc1e81210b95e9b1e23eb5e85276106b ;;
+  Linux:aarch64) asset=src; digest=6f3d4bdfa86a15e7916288f320e6a2f8d1739bdc5a93bf70d383b9ee83c86974 ;;
+  *) echo 'Supported: Linux x86_64/aarch64, macOS arm64.' >&2; exit 2 ;;
 esac
-archive=".tools/downloads/shen-scheme-v0.52-pyrex41.5-$asset-bin.tar.gz"
-if [ ! -f "$archive" ]; then
-  curl --fail --location --retry 3 --connect-timeout 15 --max-time 180 \
-    "https://github.com/pyrex41/shen-scheme/releases/download/v0.52-pyrex41.5/shen-scheme-v0.52-pyrex41.5-$asset-bin.tar.gz" \
-    -o "$archive.partial"
-  mv "$archive.partial" "$archive"
-fi
-[ "$(hash "$archive")" = "$vor_archive_sha256" ] || { echo 'Host checksum mismatch' >&2; exit 1; }
-fetch_kernel
-# Extraction is cheap: always replace the tree from the verified archive.
+fetch upstream-v0.52-$asset.tar.gz "$release/shen-scheme-v0.52-$asset.tar.gz" "$digest"
+fetch upstream-8d26151.tar.gz https://codeload.github.com/tizoc/shen-scheme/tar.gz/8d261518db17fbfec32d1b268b40ed216b925c74 "$vor_archive_sha256"
+fetch kernel-ec16a9f.tar.gz https://github.com/pyrex41/shen-sources/releases/download/upstream-ec16a9f/ShenOSKernel-43.1-ec16a9f.tar.gz 060066a8f84d9a2f7d41cb3b37b986a8d4653279752b739b5063cd648d9baacd
+fetch t-star-pr117.shen https://raw.githubusercontent.com/Shen-Language/shen-sources/ec16a9fa4fc2e87e2aa336fb1ae30e8ac2266394/sources/t-star.shen "$vor_overlay_sha256"
+cp .tools/downloads/t-star-pr117.shen .tools/t-star-pr117.shen
+# Never reuse a partial build, or qualify an unverified pre-existing runtime.
 rm -f "$vor_identity" "$vor_host_path"
-rm -rf ".tools/host/$directory"
-tar xzf "$archive" --no-same-owner -C .tools/host
-host=".tools/host/$directory/bin/shen-scheme"
+work=$(mktemp -d "$PWD/.tools/source/upstream-build.XXXXXX")
+trap 'rm -rf "$work"' EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+mkdir "$work/bootstrap" "$work/source"
+tar --no-same-owner -xzf .tools/downloads/upstream-v0.52-$asset.tar.gz --strip-components=1 -C "$work/bootstrap"
+tar --no-same-owner -xzf .tools/downloads/upstream-8d26151.tar.gz --strip-components=1 -C "$work/source"
+bootstrap="$work/bootstrap"
+if [ "$asset" = src ]; then
+  # No upstream Linux ARM binary: build the released precompiled sources first.
+  command -v timeout >/dev/null 2>&1 || { echo 'Source bootstrap needs timeout.' >&2; exit 2; }
+  TAR_OPTIONS=--no-same-owner timeout --kill-after=15s 10m make -C "$bootstrap" all
+  bootstrap="$bootstrap/_build"
+fi
+kernel="$PWD/.tools/downloads/kernel-ec16a9f.tar.gz"
+builder="$PWD/scripts/build-upstream-shen.sh"
+(cd "$work/source" && sh "$builder" "$bootstrap" "$kernel" "$work/result")
+directory=.tools/host/upstream-8d26151
+rm -rf "$directory"
+mv "$work/result" "$directory"
+host="$directory/bin/shen-scheme"
 vor_record_identity "$host"
 printf '%s\n' "$host" > "$vor_host_path"
-echo 'Pinned Shen-Scheme binary ready.'
+echo 'Pinned upstream Shen-Scheme ready (8d26151, kernel ec16a9f).'
