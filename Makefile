@@ -46,3 +46,7 @@ test-metatheory:
 
 compiler-demo:
 	./scripts/shen -l vor.shen -l examples/admission.shen -e '(vor.compiled-outcome (admission-demo.program) (hd (tl (vor.compile-program (admission-demo.program)))) total.twice [[succ [succ zero]]] 2000)'
+
+.PHONY: cases-demo
+cases-demo:
+	./scripts/shen -l vor.shen -l examples/scoping.shen -e '(scoping.run)'

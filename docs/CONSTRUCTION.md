@@ -199,6 +199,55 @@ The planned release command must do all of the following in a fresh image:
 A passing output table alone cannot complete this script. Neither can an
 arithmetic proof detached from the definition that is actually executed.
 
+## Case analysis and derived equality (untrusted producers)
+
+`construct/cases.shen` and `construct/derive-eq.shen` are proof and source
+producers. They add no rule, side condition or axiom. Their output goes
+through the same `vor.normalize`, `vor.construct-check`, `vor.admit` and
+`vor.check-constructed-theorem` routes as hand-written input. The trusted
+root inventories are unchanged; `tests/cases.shen` checks this.
+
+**Case analysis.** `vor.prove-script Sig Vars Gamma Goal Script Fuel` consumes
+the goal's leading quantifiers with `gen` or `induct` (data-induct; each branch
+continues the script), then searches:
+
+- `imp`: `intro`. An equality hypothesis is normalized in the context *before*
+  it is added, so it cannot rewrite itself. Distinct constructor normal forms
+  close the goal with `exfalso` and `disjoint`. Otherwise a normalized copy is
+  introduced with `apply`/`intro`, so it acts as a rewrite rule.
+- Equality: rewrite both sides with the bounded rewriter. If the normal forms
+  differ, try a ground hypothesis that normalizes to distinct constructors,
+  constructor congruence (`subst` chains), backchaining through a hypothesis
+  `forall Xs. Pre -> L = R`, and finally a case split.
+- Case split on an enumeration-sorted, non-constructor subterm `T` of the goal
+  or of a ground hypothesis: prove `forall Z. T = Z -> Goal` by data-induct,
+  instantiate `Z := T` and discharge `T = T` by `refl`.
+
+A search failure leaves `[search-failed]` in the term and the kernel rejects
+it. Depth bounds nesting (at most 2^Depth split branches); fuel bounds each
+rewrite. Contract posts may already be implications (R05 Post is any formed
+formula over `[Result | Inputs]`); this producer is what makes conditional
+posts and theorems with a decidable hypothesis practical. It is not a
+precondition: the contract domain is still every value of the input sorts.
+
+**Derived structural equality.** `vor.derive-eq Data [Truth Yes No] Sorts`
+emits ordinary R05 source: `derive.and`, a constructor test
+`derive.is.C`, field projections `derive.get.C.I` (a fixed default value for
+other constructors) and `derive.eq.S` per sort, with `[top]` contracts. It also
+emits, per sort, `forall X. eq(X,X)=yes` and
+`forall X Y. eq(X,Y)=yes -> X=Y` with proof scripts.
+`vor.derive-lemma-proof` proves lemma K with all earlier lemmas proved and
+introduced first. Every field sort must be the sort itself or derived
+earlier. The generated equality is a definition like any other; soundness is
+a checked theorem about it, not a property of the generator.
+
+`make cases-demo` runs `examples/scoping.shen`: identifier equality soundness,
+the tenant scoping theorem without hand lemmas, `find(T,C,P)=some(R) ->
+company(R)=C`, a conditional contract post, and the derived equality bundle.
+The always-yes equality and a lookup without its company check admit as total
+functions, run to return another company's row, and fail every scoping
+theorem, both through the producer and when the accepted proofs are replayed.
+
 ## Reference material examined
 
 All Backpressure references below are pinned to the same reviewed snapshot:

@@ -20,4 +20,6 @@
 (load "proofs/arithmetic.shen")
 (load "proofs/composition.shen")
 (load "construct/equality.shen")
+(load "construct/cases.shen")
+(load "construct/derive-eq.shen")
 (load "runtime/compile.shen")

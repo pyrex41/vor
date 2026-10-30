@@ -148,6 +148,11 @@ root** is sound. Remaining generic metatheory includes:
 5. Generic soundness/termination of the extended checker and literal/System S
    correspondence, plus the R03 normalization/evaluation and R15 host obligations.
 
+Conditional posts (`imp`) and theorems with a decidable hypothesis, equality
+soundness and generated structural equality are produced by the untrusted
+case-analysis and derived-equality producers described in CONSTRUCTION.md and
+checked by this same route; see `make cases-demo`.
+
 The trust statement is conditional on this reviewed root. No test or example
 proof discharges those implementation-wide statements; the roadmap registry
 retains its open obligations. The next application stage is R06's exact transfer
