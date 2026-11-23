@@ -1,8 +1,12 @@
-.PHONY: bootstrap test demo plan boundary-demo test-kernel logic-demo test-service program-demo test-effects-protocol export-effects-model
+.PHONY: bootstrap test demo plan boundary-demo test-kernel logic-demo test-service program-demo test-effects-protocol export-effects-model test-keyed-fenced
 bootstrap:
 	./scripts/bootstrap
 test:
 	./scripts/shen -l tests/run.shen
+
+test-keyed-fenced:
+	./scripts/shen -l tests/keyed-fenced-equivalence.shen -e '(keyed.equivalence 0 1)'
+	./scripts/shen -l tests/keyed-fenced-history.shen
 
 test-effects-protocol:
 	./scripts/shen -l tests/effects-protocol.shen
