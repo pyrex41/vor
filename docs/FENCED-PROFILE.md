@@ -36,3 +36,20 @@ Run `./scripts/shen -l tests/fenced-profile.shen` for admission, tenant-frame,
 owner/epoch/lease controls, atomic completion/outbox, sink idempotency, retry
 conflicts, bounded-epoch uncertainty and forged-admission rejection. These
 engineering checks do not establish Erlang/PostgreSQL implementation refinement.
+
+## Keyed local-rule experiment
+
+Run `make test-keyed-fenced` after `make bootstrap`. The test-only Shen
+model uses a map keyed by `(tenant, job)` and one parameterized rule per
+operation. The frame preserves unrelated records; expiry is deliberately a
+global rewrite. Completion retains the atomic result/outbox abstraction, and
+delivery changes the logical sink flag, not the physical count observed by the
+history checker.
+
+The test checks the constructor codec and compares full `fj.next` results
+for all 49,005 declared world/action pairs, including unreachable worlds.
+It also checks that distinct-key completions commute but claim and global
+expiry need not. A separate process runs the same history controls against
+both steppers with their original expected verdicts. No service loads the
+shadow model. This experiment neither changes admission nor qualifies the
+PostgreSQL implementation.
